@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>신청서 수정 — 코칭 Admin</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="assets/css/modify.css">
+</head>
+<body>
+
+<!-- 사이드바 -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-text">🌿 Coaching</div>
+    <div class="logo-sub">Admin Dashboard</div>
+  </div>
+  <nav class="sidebar-nav">
+    <a class="nav-item" href="admin.html"><span>📊</span><span>대시보드</span></a>
+    <a class="nav-item active" href="modify.html"><span>✏️</span><span>신청서 수정</span></a>
+    <a class="nav-item" href="index.html" target="_blank"><span>📋</span><span>신청 페이지</span></a>
+  </nav>
+  <div class="sidebar-footer">v1.0 · 이 연 임 코치</div>
+</aside>
+
+<!-- 메인 -->
+<div class="main-content">
+
+  <header class="topbar">
+    <h1 class="topbar-title">✏️ 신청서 수정</h1>
+    <div class="topbar-actions">
+      <button class="btn btn-outline" onclick="Modify.openPreview()">👁 미리보기</button>
+      <button class="btn btn-primary" onclick="Modify.save()" id="saveBtn">💾 저장</button>
+    </div>
+  </header>
+
+  <div class="modify-body">
+
+    <!-- 왼쪽: 문항 편집 -->
+    <div>
+
+      <!-- 문항 텍스트 수정 -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header">
+          <span class="card-title">📝 문항 텍스트 편집</span>
+          <span style="font-size:12px;color:#6b7280;">입력 가능한 문항만 표시됩니다</span>
+        </div>
+        <div class="card-body" id="fieldEditorList">
+          <p style="color:#6b7280;font-size:13px;text-align:center;padding:20px;">
+            데이터를 불러오는 중입니다...
+          </p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 오른쪽: 배경 설정 + 저장 안내 -->
+    <div>
+
+      <!-- 배경 설정 -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header">
+          <span class="card-title">🎨 배경 설정</span>
+        </div>
+        <div class="card-body">
+          <div class="bg-option-tabs">
+            <button class="bg-tab active" onclick="Modify.switchBgTab('color', this)">🎨 색상</button>
+            <button class="bg-tab"        onclick="Modify.switchBgTab('image', this)">🖼 이미지</button>
+          </div>
+
+          <!-- 색상 그라디언트 -->
+          <div class="bg-option active" id="bgColorOption">
+            <div class="color-row">
+              <span class="color-label">시작 색상</span>
+              <input type="color" class="color-input" id="bgColor1" value="#e8f0e9" oninput="Modify.updateBgPreview()">
+              <div class="color-preview" id="bgPreviewColor" style="background:linear-gradient(135deg,#e8f0e9,#f5efe6)"></div>
+            </div>
+            <div class="color-row">
+              <span class="color-label">끝 색상</span>
+              <input type="color" class="color-input" id="bgColor2" value="#f5efe6" oninput="Modify.updateBgPreview()">
+            </div>
+            <p style="font-size:11px;color:#9ca3af;margin-top:4px;">
+              대각선 그라디언트가 적용됩니다.
+            </p>
+          </div>
+
+          <!-- 이미지 업로드 -->
+          <div class="bg-option" id="bgImageOption">
+            <div class="file-upload-area" onclick="document.getElementById('bgImageInput').click()">
+              <input type="file" id="bgImageInput" accept="image/*" onchange="Modify.handleImageUpload(this)">
+              <div class="upload-icon">📁</div>
+              <div class="upload-text">클릭하여 이미지 업로드</div>
+              <div class="upload-filename" id="uploadFilename">선택된 파일 없음</div>
+            </div>
+          </div>
+
+          <!-- 배경 미리보기 -->
+          <div class="bg-preview-box" id="bgPreviewBox">배경 미리보기</div>
+        </div>
+      </div>
+
+      <!-- 안내 -->
+      <div class="card">
+        <div class="card-header"><span class="card-title">ℹ️ 수정 안내</span></div>
+        <div class="card-body" style="font-size:13px;color:#6b7280;line-height:1.8;">
+          <p>• <strong>문항 텍스트</strong>만 수정 가능합니다.</p>
+          <p>• 고정값(비용, 결제, 1회 시간 등)은 수정되지 않습니다.</p>
+          <p>• 변경사항은 <strong>계약서에도 자동 반영</strong>됩니다.</p>
+          <p>• <strong>미리보기</strong>로 신청자 화면을 확인하세요.</p>
+          <p>• 저장 후에는 즉시 반영됩니다.</p>
+        </div>
+      </div>
+
+    </div>
+
+  </div><!-- /.modify-body -->
+</div><!-- /.main-content -->
+
+<!-- 토스트 알림 -->
+<div class="toast" id="toast"></div>
+
+<script src="config.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/modify.js"></script>
+
+</body>
+</html>

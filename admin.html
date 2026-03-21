@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — 코칭 관리 대시보드</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="assets/css/admin.css">
+
+  <!-- SheetJS (엑셀 다운로드) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+
+<!-- ── 사이드바 ──────────────────────────────── -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-text">🌿 Coaching</div>
+    <div class="logo-sub">Admin Dashboard</div>
+  </div>
+  <nav class="sidebar-nav">
+    <a class="nav-item active" href="admin.html">
+      <span>📊</span><span>대시보드</span>
+    </a>
+    <a class="nav-item" href="modify.html">
+      <span>✏️</span><span>신청서 수정</span>
+    </a>
+    <a class="nav-item" href="index.html" target="_blank">
+      <span>📋</span><span>신청 페이지</span>
+    </a>
+  </nav>
+  <div class="sidebar-footer">v1.0 · 이 연 임 코치</div>
+</aside>
+
+<!-- ── 메인 콘텐츠 ────────────────────────────── -->
+<div class="main-content">
+
+  <!-- 상단 바 -->
+  <header class="topbar">
+    <h1 class="topbar-title">코칭 현황</h1>
+    <div class="topbar-actions">
+
+      <!-- Secretary Mode 토글 -->
+      <div class="secretary-toggle">
+        <span class="secretary-label" id="secretaryLabel">비서 모드</span>
+        <label class="toggle-switch" title="매주 일요일 9시 자동 이메일 발송">
+          <input type="checkbox" id="secretaryToggle">
+          <span class="toggle-track"></span>
+        </label>
+      </div>
+
+      <button class="btn btn-excel" id="btnExcel" onclick="Admin.exportExcel()">
+        📥 엑셀 다운로드
+      </button>
+
+      <a class="btn btn-outline" href="modify.html">✏️ 신청서 수정</a>
+    </div>
+  </header>
+
+  <div class="dashboard">
+
+    <!-- 통계 카드 -->
+    <div class="stat-cards" id="statCards">
+      <div class="stat-card">
+        <div class="stat-icon">👥</div>
+        <div>
+          <div class="stat-value" id="statTotal">-</div>
+          <div class="stat-label">전체 등록</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">✅</div>
+        <div>
+          <div class="stat-value" id="statSent">-</div>
+          <div class="stat-label">계약서 발송 완료</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">⏳</div>
+        <div>
+          <div class="stat-value" id="statPending">-</div>
+          <div class="stat-label">대기 중</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🗓</div>
+        <div>
+          <div class="stat-value" id="statThisMonth">-</div>
+          <div class="stat-label">이번 달 시작</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 캘린더 -->
+    <div class="calendar-card">
+      <div class="card-header">
+        <h2 class="card-title">📅 월간 코칭 일정</h2>
+        <div class="cal-nav">
+          <button class="cal-nav-btn" id="calPrev">◀</button>
+          <span class="cal-month-title" id="calMonthTitle"></span>
+          <button class="cal-nav-btn" id="calNext">▶</button>
+        </div>
+      </div>
+      <div class="calendar-grid" id="calendarGrid">
+        <div class="cal-header">일</div>
+        <div class="cal-header">월</div>
+        <div class="cal-header">화</div>
+        <div class="cal-header">수</div>
+        <div class="cal-header">목</div>
+        <div class="cal-header">금</div>
+        <div class="cal-header">토</div>
+      </div>
+    </div>
+
+    <!-- 리스트 테이블 -->
+    <div class="table-card">
+      <div class="table-toolbar">
+        <h2 class="card-title">📋 등록 현황</h2>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <input class="table-search" type="search" id="tableSearch"
+                 placeholder="이름 / 이메일 검색" oninput="Admin.filterTable()">
+          <button class="btn btn-outline" onclick="Admin.loadData()" style="white-space:nowrap;">
+            🔄 새로고침
+          </button>
+        </div>
+      </div>
+
+      <div class="table-scroll">
+        <table id="registrationsTable">
+          <thead>
+            <tr>
+              <th data-key="name"            onclick="Admin.sortTable('name')">이름 <span class="sort-icon">↕</span></th>
+              <th data-key="start_date"      onclick="Admin.sortTable('start_date')">시작일 <span class="sort-icon">↕</span></th>
+              <th data-key="end_date"        onclick="Admin.sortTable('end_date')">종료일 <span class="sort-icon">↕</span></th>
+              <th data-key="session_type"    onclick="Admin.sortTable('session_type')">진행 방식 <span class="sort-icon">↕</span></th>
+              <th data-key="session_count"   onclick="Admin.sortTable('session_count')">세션 횟수 <span class="sort-icon">↕</span></th>
+              <th data-key="email"           onclick="Admin.sortTable('email')">이메일 <span class="sort-icon">↕</span></th>
+              <th data-key="contract_status" onclick="Admin.sortTable('contract_status')">계약서 상태 <span class="sort-icon">↕</span></th>
+              <th data-key="created_at"      onclick="Admin.sortTable('created_at')">등록일 <span class="sort-icon">↕</span></th>
+            </tr>
+          </thead>
+          <tbody id="tableBody">
+            <tr>
+              <td colspan="8" class="empty-state">
+                <div class="empty-icon">📭</div>
+                <div class="empty-text">데이터를 불러오는 중입니다...</div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="pagination" id="pagination">
+        <span id="paginationInfo"></span>
+        <div class="page-btns" id="pageBtns"></div>
+      </div>
+    </div>
+
+  </div><!-- /.dashboard -->
+</div><!-- /.main-content -->
+
+<!-- 상세 정보 팝업 -->
+<div class="modal-overlay" id="detailModal" onclick="Admin.closeModal(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="Admin.closeModal()">&times;</button>
+    <h2 class="modal-title" id="modalTitle">등록 상세 정보</h2>
+    <div class="detail-grid" id="modalContent"></div>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/calendar.js"></script>
+<script src="assets/js/secretary.js"></script>
+<script src="assets/js/admin.js"></script>
+
+</body>
+</html>
