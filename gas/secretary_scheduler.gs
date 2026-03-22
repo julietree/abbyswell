@@ -31,7 +31,7 @@ function getSheet(name) {
     // 시트가 없으면 자동 생성 + 헤더 추가
     sheet = ss.insertSheet(name);
     const headers = {
-      'registrations': ['id','name','email','contact','start_date','end_date','session_type','session_count','topic','online_link','contract_url','contract_status','created_at'],
+      'registrations': ['id','name','email','contact','start_date','end_date','session_type','session_count','topic','online_link','preferred_times','contract_url','contract_status','created_at'],
       'form_config':   ['field_id','label','type','style','bg_config','updated_at'],
       'config':        ['key','value'],
       'secretary_log': ['sent_at','clients','to_email','subject','status'],
@@ -178,11 +178,12 @@ function handleWriteRegistration(data) {
     data.email,
     data.contact,
     data.start_date,
-    data.end_date,
-    data.session_type,
+    data.end_date         || '',
+    data.session_type     || '',
     data.session_count,
-    data.topic,
-    data.online_link || '',
+    data.topic            || '',
+    data.online_link      || '',
+    data.preferred_times  || '',
     '',             // contract_url (추후 업데이트)
     '대기중',       // contract_status
     new Date().toISOString(),

@@ -11,22 +11,12 @@ const Survey = (() => {
   // ── 상태 ────────────────────────────────────────────
   let currentSection   = 1;
   const TOTAL_SECTIONS = 3;
-  let bookedDates      = new Set();
-  let selectedStartDate = null;
-
-  // ── 날짜 선택기 상태 ────────────────────────────────
-  const dpState = {
-    year:  new Date().getFullYear(),
-    month: new Date().getMonth(),
-  };
 
   // ── 초기화 ──────────────────────────────────────────
   async function init() {
     if (typeof emailjs !== 'undefined') {
       emailjs.init(CONFIG.EMAILJS_PUBLIC_KEY);
     }
-    await loadBookedDates();
-    renderDatePicker();
     bindEvents();
 
     if (new URLSearchParams(window.location.search).get('preview') === 'true') {
@@ -34,125 +24,8 @@ const Survey = (() => {
     }
   }
 
-  // ── 예약 날짜 로드 ───────────────────────────────────
-  async function loadBookedDates() {
-    try {
-      const registrations = await API.getRegistrations();
-      bookedDates = new Set(
-        registrations
-          .filter(r => r.start_date)
-          .map(r => r.start_date.trim())
-      );
-    } catch (err) {
-      console.warn('예약 날짜 로드 실패 (오프라인 모드로 진행):', err.message);
-    }
-  }
-
-  // ── 날짜 선택기 렌더 ─────────────────────────────────
-  function renderDatePicker() {
-    const grid    = document.getElementById('startDpGrid');
-    const titleEl = document.getElementById('startMonthTitle');
-    const { year, month } = dpState;
-
-    titleEl.textContent = `${year}년 ${month + 1}월`;
-
-    const cells = grid.querySelectorAll('.dp-day');
-    cells.forEach(c => c.remove());
-
-    const today       = new Date();
-    today.setHours(0, 0, 0, 0);
-    const firstDay    = new Date(year, month, 1).getDay();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-    for (let i = 0; i < firstDay; i++) {
-      const empty = document.createElement('div');
-      empty.className = 'dp-day empty';
-      grid.appendChild(empty);
-    }
-
-    for (let d = 1; d <= daysInMonth; d++) {
-      const cellDate   = new Date(year, month, d);
-      const dateStr    = formatDateISO(cellDate);
-      const isPast     = cellDate < today;
-      const isBooked   = bookedDates.has(dateStr);
-      const isSelected = selectedStartDate && formatDateISO(selectedStartDate) === dateStr;
-      const isToday    = formatDateISO(cellDate) === formatDateISO(today);
-
-      const cell = document.createElement('div');
-      cell.className = 'dp-day';
-      cell.textContent = d;
-      cell.setAttribute('role', 'gridcell');
-
-      if (isPast) {
-        cell.classList.add('past');
-        cell.setAttribute('aria-disabled', 'true');
-      } else if (isBooked) {
-        cell.classList.add('disabled');
-        cell.setAttribute('aria-disabled', 'true');
-        cell.title = '이미 예약된 날짜입니다';
-      } else {
-        cell.addEventListener('click', () => selectStartDate(cellDate));
-      }
-
-      if (isSelected) cell.classList.add('selected');
-      if (isToday)    cell.classList.add('today');
-
-      grid.appendChild(cell);
-    }
-  }
-
-  function selectStartDate(date) {
-    selectedStartDate = date;
-    const iso = formatDateISO(date);
-
-    document.getElementById('start_date').value = iso;
-    document.getElementById('startDateDisplay').textContent = formatKoreanDate(date);
-    document.getElementById('startDateDisplay').classList.remove('placeholder');
-
-    closeDatePicker();
-    renderDatePicker();
-    clearError('start_date');
-  }
-
-  function openDatePicker() {
-    document.getElementById('startDatePicker').classList.add('open');
-    document.getElementById('startDateBtn').setAttribute('aria-expanded', 'true');
-  }
-
-  function closeDatePicker() {
-    document.getElementById('startDatePicker').classList.remove('open');
-    document.getElementById('startDateBtn').setAttribute('aria-expanded', 'false');
-  }
-
   // ── 이벤트 바인딩 ────────────────────────────────────
   function bindEvents() {
-    // 날짜 선택기 토글
-    document.getElementById('startDateBtn').addEventListener('click', (e) => {
-      e.stopPropagation();
-      const picker = document.getElementById('startDatePicker');
-      picker.classList.contains('open') ? closeDatePicker() : openDatePicker();
-    });
-
-    // 날짜 선택기 외부 클릭 닫기
-    document.addEventListener('click', (e) => {
-      if (!document.getElementById('startDateWrapper').contains(e.target)) {
-        closeDatePicker();
-      }
-    });
-
-    // 월 이동
-    document.getElementById('startPrevMonth').addEventListener('click', () => {
-      dpState.month--;
-      if (dpState.month < 0) { dpState.month = 11; dpState.year--; }
-      renderDatePicker();
-    });
-
-    document.getElementById('startNextMonth').addEventListener('click', () => {
-      dpState.month++;
-      if (dpState.month > 11) { dpState.month = 0; dpState.year++; }
-      renderDatePicker();
-    });
-
     // 폼 제출
     document.getElementById('registrationForm').addEventListener('submit', handleSubmit);
   }
@@ -188,8 +61,7 @@ const Survey = (() => {
     let valid = true;
 
     if (section === 1) {
-      if (!getVal('name').trim())  { showError('name');       valid = false; }
-      if (!getVal('start_date'))   { showError('start_date'); valid = false; }
+      if (!getVal('name').trim())  { showError('name');    valid = false; }
       const email = getVal('email').trim();
       if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         showError('email'); valid = false;
@@ -199,7 +71,9 @@ const Survey = (() => {
 
     if (section === 2) {
       const total = parseInt(document.getElementById('session_count_total').value);
-      if (!total || total < 1) { showError('session_count'); valid = false; }
+      if (!total || total < 3 || total > 10) { showError('session_count'); valid = false; }
+      const times = document.querySelectorAll('input[name="preferred_times"]:checked');
+      if (times.length === 0) { showError('preferred_times'); valid = false; }
     }
 
     if (section === 3) {
@@ -256,20 +130,26 @@ const Survey = (() => {
   }
 
   function collectFormData() {
+    const today = new Date();
+    const preferredTimes = Array.from(
+      document.querySelectorAll('input[name="preferred_times"]:checked')
+    ).map(cb => cb.value).join(', ');
+
     return {
       id:                 crypto.randomUUID(),
       name:               getVal('name').trim(),
       email:              getVal('email').trim(),
       contact:            getVal('contact').trim(),
-      start_date:         getVal('start_date'),
+      start_date:         formatDateISO(today),
       end_date:           '',
       session_type:       '',
       session_count:      getVal('session_count_total'),
       monthly_count:      '',
-      topic:              '',
+      topic:              preferredTimes,
       online_link:        '',
-      submitted_at:       new Date().toISOString(),
-      submitted_date_str: formatKoreanDate(new Date()),
+      submitted_at:       today.toISOString(),
+      submitted_date_str: formatKoreanDate(today),
+      preferred_times:    preferredTimes,
     };
   }
 

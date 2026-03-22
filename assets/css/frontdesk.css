@@ -966,3 +966,52 @@ details[open] .terms-summary::after {
     display: none;
   }
 }
+
+/* ── 선호 시간대 체크박스 ──────────────────────────────── */
+.timeslot-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.timeslot-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-input);
+  background: #fafafa;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.timeslot-option:hover {
+  border-color: var(--color-primary-light);
+  background: #f0f6f0;
+}
+
+.timeslot-option input[type=checkbox] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.timeslot-option input[type=checkbox]:checked + .timeslot-label {
+  color: var(--color-primary-dark);
+  font-weight: 600;
+}
+
+.timeslot-option:has(input:checked) {
+  border-color: var(--color-primary);
+  background: #f0f6f0;
+}
+
+.timeslot-label {
+  font-size: 14px;
+  color: var(--color-text);
+  cursor: pointer;
+}
