@@ -20,6 +20,17 @@ const Admin = (() => {
     await loadData();
   }
 
+  // ── localStorage 캐시 헬퍼 ───────────────────────────
+  function getFsCache() {
+    try { return JSON.parse(localStorage.getItem('admin_fs') || '{}'); }
+    catch { return {}; }
+  }
+  function setFsCache(id, value) {
+    const cache = getFsCache();
+    cache[id] = value;
+    localStorage.setItem('admin_fs', JSON.stringify(cache));
+  }
+
   // ── 데이터 로드 ──────────────────────────────────────
   async function loadData() {
     try {
@@ -29,6 +40,22 @@ const Admin = (() => {
       allData = [];
       showEmptyState('데이터를 불러오지 못했습니다. 설정을 확인해 주세요.');
     }
+
+    // GAS에 first_session이 없으면 localStorage 캐시로 보완
+    const fsCache = getFsCache();
+    allData.forEach(reg => {
+      const key = reg.id || reg.created_at;
+      if (key) {
+        if (reg.first_session) {
+          // GAS 값이 있으면 캐시도 최신으로 업데이트
+          fsCache[key] = reg.first_session;
+        } else if (fsCache[key]) {
+          // GAS 값 없으면 캐시 값 사용
+          reg.first_session = fsCache[key];
+        }
+      }
+    });
+    localStorage.setItem('admin_fs', JSON.stringify(fsCache));
 
     filtered = [...allData];
     updateStats();
@@ -128,22 +155,24 @@ const Admin = (() => {
     if (!dateInput || !dateInput.value) return;
 
     const value = `${dateInput.value}T${hourSelect.value}:${minSelect.value}`;
-    if (allData[idx]) {
-      allData[idx].first_session = value;
+    const reg = allData[idx];
+    if (reg) {
+      reg.first_session = value;
+      // localStorage에 즉시 저장 (새로고침 후에도 유지)
+      const key = reg.id || reg.created_at;
+      if (key) setFsCache(key, value);
     }
     Calendar.update(allData);
+    showSaveToast('✅ 첫차수 저장됨');
 
-    // 디바운스: 800ms 뒤 구글시트에 저장
+    // 디바운스: 800ms 뒤 구글시트에도 저장 (백업)
     clearTimeout(_saveTimer);
     _saveTimer = setTimeout(async () => {
-      const reg = allData[idx];
       if (!reg || !reg.id) return;
       try {
         await API.updateFirstSession(reg.id, value);
-        showSaveToast('✅ 첫차수 저장됨');
       } catch (err) {
-        console.error('첫차수 저장 실패:', err.message);
-        showSaveToast('⚠️ 저장 실패: ' + err.message);
+        console.error('첫차수 GAS 저장 실패:', err.message);
       }
     }, 800);
   }
