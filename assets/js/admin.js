@@ -9,6 +9,7 @@ const Admin = (() => {
   let sortDir     = 'desc';
   const PAGE_SIZE = 15;
   let currentPage = 1;
+  let _saveTimer = null;
 
   // 시간 선택 옵션
   const HOURS = Array.from({length: 24}, (_, i) => String(i).padStart(2,'0'));
@@ -119,7 +120,7 @@ const Admin = (() => {
     `;
   }
 
-  // ── 첫차수 업데이트 ──────────────────────────────────
+  // ── 첫차수 업데이트 & 구글시트 저장 ─────────────────────────────
   function updateFirstSession(idx) {
     const dateInput  = document.querySelector(`.fs-date[data-idx="${idx}"]`);
     const hourSelect = document.querySelector(`.fs-hour[data-idx="${idx}"]`);
@@ -130,8 +131,40 @@ const Admin = (() => {
     if (allData[idx]) {
       allData[idx].first_session = value;
     }
-    // filtered도 같은 객체 참조이므로 자동 반영
     Calendar.update(allData);
+
+    // 디바운스: 800ms 뒤 구글시트에 저장
+    clearTimeout(_saveTimer);
+    _saveTimer = setTimeout(async () => {
+      const reg = allData[idx];
+      if (!reg || !reg.id) return;
+      try {
+        await API.updateFirstSession(reg.id, value);
+        showSaveToast('✅ 첫차수 저장됨');
+      } catch (err) {
+        console.error('첫차수 저장 실패:', err.message);
+        showSaveToast('⚠️ 저장 실패: ' + err.message);
+      }
+    }, 800);
+  }
+
+  // ── 저장 토스트 ──────────────────────────────────────
+  function showSaveToast(msg) {
+    let toast = document.getElementById('saveToast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'saveToast';
+      toast.style.cssText = [
+        'position:fixed','bottom:24px','right:24px','background:#1f2937',
+        'color:#fff','padding:10px 18px','border-radius:8px','font-size:13px',
+        'z-index:9999','opacity:0','transition:opacity 0.3s','pointer-events:none',
+      ].join(';');
+      document.body.appendChild(toast);
+    }
+    toast.textContent = msg;
+    toast.style.opacity = '1';
+    clearTimeout(toast._timer);
+    toast._timer = setTimeout(() => { toast.style.opacity = '0'; }, 2500);
   }
 
   // ── 테이블 렌더 ─────────────────────────────────────

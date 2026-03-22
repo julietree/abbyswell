@@ -31,7 +31,7 @@ function getSheet(name) {
     // 시트가 없으면 자동 생성 + 헤더 추가
     sheet = ss.insertSheet(name);
     const headers = {
-      'registrations': ['id','name','email','contact','start_date','end_date','session_type','session_count','topic','online_link','preferred_times','contract_url','contract_status','created_at'],
+      'registrations': ['id','name','email','contact','start_date','end_date','session_type','session_count','topic','online_link','preferred_times','contract_url','contract_status','created_at','first_session'],
       'form_config':   ['field_id','label','type','style','bg_config','updated_at'],
       'config':        ['key','value'],
       'secretary_log': ['sent_at','clients','to_email','subject','status'],
@@ -168,6 +168,9 @@ function doPost(e) {
       case 'runSecretaryNow':
         result = secretaryWeeklyTrigger();
         break;
+      case 'updateFirstSession':
+        result = handleUpdateFirstSession(payload.registrationId, payload.value);
+        break;
       default:
         result = { status: 'error', message: '알 수 없는 action: ' + payload.action };
     }
@@ -217,6 +220,28 @@ function getOrCreateFolder(name) {
   const folders = DriveApp.getFoldersByName(name);
   if (folders.hasNext()) return folders.next();
   return DriveApp.createFolder(name);
+}
+
+function handleUpdateFirstSession(registrationId, value) {
+  const sheet   = getSheet('registrations');
+  const data    = sheet.getDataRange().getValues();
+  const headers = data[0];
+
+  // first_session 컬럼 찾기 — 없으면 헤더 행에 추가
+  let colIdx = headers.indexOf('first_session');
+  if (colIdx === -1) {
+    colIdx = headers.length;
+    sheet.getRange(1, colIdx + 1).setValue('first_session');
+  }
+
+  // 해당 registrationId 행 찾아서 업데이트
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][0]) === String(registrationId)) {
+      sheet.getRange(i + 1, colIdx + 1).setValue(value);
+      return { message: '첫차수 업데이트 완료' };
+    }
+  }
+  return { message: '등록 ID를 찾을 수 없습니다: ' + registrationId };
 }
 
 function handleUpdateContractStatus(registrationId, status, contractUrl) {

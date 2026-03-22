@@ -134,6 +134,15 @@ const API = (() => {
   }
 
   /**
+   * 첫차수(first_session) 업데이트
+   * @param {string} registrationId - 등록 ID
+   * @param {string} value          - ISO 날짜+시간 문자열 (예: 2026-04-01T09:00)
+   */
+  async function updateFirstSession(registrationId, value) {
+    return gasPost({ action: 'updateFirstSession', registrationId, value });
+  }
+
+  /**
    * Secretary Mode 즉시 실행 (GAS 트리거 수동 호출)
    */
   async function runSecretaryNow() {
@@ -161,6 +170,7 @@ const API = (() => {
     updateContractStatus,
     updateConfig,
     updateFormConfig,
+    updateFirstSession,
     runSecretaryNow,
     sendEmail,
   };
