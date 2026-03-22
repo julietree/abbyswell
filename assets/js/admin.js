@@ -117,12 +117,39 @@ const Admin = (() => {
     renderTable();
   }
 
+  // ── 날짜 문자열 정규화 ────────────────────────────────
+  // 구글 시트가 날짜를 "Wed Mar 25 2026 09:00:00 GMT+0000" 형식으로 반환하는 경우 처리
+  function normalizeFirstSession(raw) {
+    if (!raw) return { date: '', hour: '09', min: '00' };
+
+    // 올바른 형식: "2026-03-25T09:00"
+    if (/^\d{4}-\d{2}-\d{2}/.test(raw)) {
+      return {
+        date: raw.substring(0, 10),
+        hour: raw.length > 12 ? raw.substring(11, 13) : '09',
+        min:  raw.length > 15 ? raw.substring(14, 16) : '00',
+      };
+    }
+
+    // 구글 시트 Date 변환 형식: "Wed Mar 25 2026 09:00:00 GMT..."
+    try {
+      const d = new Date(raw);
+      if (!isNaN(d)) {
+        const m = String(d.getMinutes()).padStart(2, '0');
+        return {
+          date: `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`,
+          hour: String(d.getHours()).padStart(2, '0'),
+          min:  MINS.includes(m) ? m : '00',
+        };
+      }
+    } catch (e) {}
+
+    return { date: '', hour: '09', min: '00' };
+  }
+
   // ── 시간 선택기 HTML 생성 ─────────────────────────────
   function buildTimePicker(idx, firstSession) {
-    const fsDate = firstSession ? firstSession.substring(0, 10) : '';
-    const fsHour = firstSession && firstSession.length > 12 ? firstSession.substring(11, 13) : '09';
-    const fsMin  = firstSession && firstSession.length > 15 ? firstSession.substring(14, 16) : '00';
-    const fsMinRounded = MINS.includes(fsMin) ? fsMin : '00';
+    const { date: fsDate, hour: fsHour, min: fsMinRounded } = normalizeFirstSession(firstSession);
 
     const hourOpts = HOURS.map(h =>
       `<option value="${h}"${h === fsHour ? ' selected' : ''}>${h}</option>`

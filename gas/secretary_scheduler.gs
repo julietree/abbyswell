@@ -131,9 +131,16 @@ function handleGetConfig() {
 function parseSheetToObjects(values) {
   if (!values || values.length < 2) return [];
   const headers = values[0];
+  const tz = Session.getScriptTimeZone();
   return values.slice(1).map(row =>
     headers.reduce((obj, header, i) => {
-      obj[header] = row[i] !== undefined ? String(row[i]) : '';
+      const val = row[i];
+      if (val instanceof Date) {
+        // 구글 시트가 날짜로 자동 변환한 셀 → "yyyy-MM-ddTHH:mm" 형식으로 복원
+        obj[header] = Utilities.formatDate(val, tz, "yyyy-MM-dd'T'HH:mm");
+      } else {
+        obj[header] = val !== undefined ? String(val) : '';
+      }
       return obj;
     }, {})
   );
