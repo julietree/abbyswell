@@ -41,19 +41,30 @@ const Admin = (() => {
       showEmptyState('데이터를 불러오지 못했습니다. 설정을 확인해 주세요.');
     }
 
-    // GAS에 first_session이 없으면 localStorage 캐시로 보완
+    // first_session 정규화 헬퍼: 어떤 형식이든 "yyyy-MM-ddTHH:mm"으로 변환
+    function toIsoSession(raw) {
+      if (!raw) return '';
+      if (/^\d{4}-\d{2}-\d{2}/.test(raw)) return raw.substring(0, 16);
+      try {
+        const d = new Date(raw);
+        if (!isNaN(d)) {
+          return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}T${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+        }
+      } catch(e) {}
+      return '';
+    }
+
+    // GAS에 first_session이 없으면 localStorage 캐시로 보완 + 형식 정규화
     const fsCache = getFsCache();
-    console.log('[로드] localStorage 캐시:', fsCache);
     allData.forEach(reg => {
-      const key = reg.id || reg.created_at || reg.email || reg.name;
-      console.log('[로드] reg key:', key, 'first_session:', reg.first_session);
-      if (key) {
+      const cacheKey = reg.id || reg.created_at || reg.email || reg.name;
+      if (cacheKey) {
         if (reg.first_session) {
-          // GAS 값이 있으면 캐시도 최신으로 업데이트
-          fsCache[key] = reg.first_session;
-        } else if (fsCache[key]) {
-          // GAS 값 없으면 캐시 값 사용
-          reg.first_session = fsCache[key];
+          // 형식 정규화 (구글 시트 자동변환 대응)
+          reg.first_session = toIsoSession(reg.first_session);
+          fsCache[cacheKey] = reg.first_session;
+        } else if (fsCache[cacheKey]) {
+          reg.first_session = fsCache[cacheKey];
         }
       }
     });
