@@ -242,9 +242,6 @@ const Survey = (() => {
     try {
       await API.writeRegistration(formData);
 
-      showLoading('계약서를 생성하고 있습니다...');
-      await Contract.generate(formData);
-
       document.getElementById(`section-${currentSection}`).classList.remove('active');
       document.getElementById('completionScreen').classList.add('active');
       updateProgress(TOTAL_SECTIONS + 1);

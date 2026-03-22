@@ -1,50 +1,21 @@
 /**
- * contract.js — 계약서 생성 & 발송 파이프라인
+ * contract.js — 계약서 생성 유틸리티
  *
- * 흐름:
- *   generateContractHTML(data)        [contract_template.js]
- *       ↓ 숨겨진 <div>에 렌더
- *   html2canvas → jsPDF → PDF Blob → 로컬 다운로드
- *       ↓
- *   JSZip + OOXML → Word(.docx) Blob → 로컬 다운로드
- *       ↓
- *   EmailJS로 이메일 발송
- *       ↓
- *   api.updateContractStatus('발송완료')
+ * 흐름 (신청 시): 데이터 저장만, 파일 다운로드/이메일 없음
+ * 흐름 (Admin):   downloadDocx(reg) 호출 → Word 파일 다운로드
  */
 
 const Contract = (() => {
 
-  async function generate(formData) {
-    const container = createHiddenContainer();
-
+  /** Admin 페이지에서 호출: 등록 데이터로 Word 다운로드 */
+  async function downloadDocx(reg) {
     try {
-      container.innerHTML = generateContractHTML(formData);
-      document.body.appendChild(container);
-
-      const pdfBlob = await renderToPDF(container, formData.name);
-
-      const baseName = `코칭계약서_${formData.name}_${formData.start_date}`;
-      const filename  = `${baseName}.pdf`;
-
-      downloadBlob(pdfBlob, filename);
-      console.log('✅ PDF 저장 완료:', filename);
-
-      // Word 생성
-      try {
-        const docxBlob = await generateContractDocx(formData);
-        downloadBlob(docxBlob, `${baseName}.docx`);
-        console.log('✅ Word 저장 완료:', `${baseName}.docx`);
-      } catch (docxErr) {
-        console.error('Word 생성 실패:', docxErr);
-        alert('Word 파일 생성에 실패했습니다.\n\n오류: ' + docxErr.message + '\n\nPDF는 정상적으로 저장되었습니다.');
-      }
-
-      await sendContractEmail(formData, filename);
-      await API.updateContractStatus(formData.id, '발송완료', '');
-
-    } finally {
-      if (container.parentNode) document.body.removeChild(container);
+      const blob = await generateContractDocx(reg);
+      const filename = `코칭계약서_${reg.name}_${reg.start_date}.docx`;
+      downloadBlob(blob, filename);
+      console.log('✅ Word 저장 완료:', filename);
+    } catch (err) {
+      alert('Word 파일 생성에 실패했습니다.\n\n오류: ' + err.message);
     }
   }
 
@@ -205,69 +176,60 @@ const Contract = (() => {
         `<w:p><w:pPr><w:spacing w:after="0"/></w:pPr>${run(date, { size: 16, color: '777777' })}</w:p>` +
       `</w:tc>`;
 
-    // ── 문서 본문 조립
+    // ── 문서 본문 조립 (샘플 기준: 5개 섹션 + 서명, A4 1장)
     const body = [
-      para(run('코칭 서비스 계약서', { bold: true, size: 34 }), { align: 'center', after: 60 }),
-      para(run('Coaching Service Agreement', { italic: true, size: 22, color: '555555' }), { align: 'center', after: 60 }),
-      para(run('이 계약서는 코치와 고객 사이의 신뢰로운 코칭 관계를 위한 약속입니다.', { size: 18, color: '777777' }), { align: 'center', after: 160 }),
-      para('', { borderBottom: true, after: 160 }),
 
+      // 제목
+      para(run('코칭 서비스 계약서', { bold: true, size: 30 }), { align: 'center', after: 0 }),
+      para('', { borderBottom: true, before: 200, after: 100 }),
+
+      // 제1항. 기본 정보
       secTitle('제1항. 기본 정보'),
       infoTable([
-        ['코치 이름', '이 연 임', '고객 이름', data.name],
-        ['계약 시작일', data.start_date, ...(data.online_link ? ['온라인 링크', data.online_link] : ['', ''])],
+        ['코치 이름', '이 연 임', '고객 이름', esc(data.name)],
+        ['계약 시작일', esc(data.start_date), '세션횟수', `총 ${esc(data.session_count)}회 (1회 약 50~60분)`],
       ]),
       emptyP(),
 
+      // 제2항. 코칭이란
       secTitle('제2항. 코칭이란 무엇인가요?'),
-      para(run('코칭은 고객이 스스로 원하는 삶을 설계하고 목표를 실현할 수 있도록 돕는 파트너십입니다.', { size: 18 }), { after: 60 }),
-      bl('코치는 조언이나 해답을 제시하지 않습니다. 모든 답은 고객 안에 있다고 믿습니다.'),
-      bl('고객의 현재 상황과 원하는 미래에 집중하며, 심리상담·멘토링·컨설팅과는 다릅니다.'),
-      para(run('💡 코칭은 현재~미래에 초점을 두며, 과거의 상처나 정신건강 문제는 다루지 않습니다. 이런 영역은 전문 상담사의 도움이 필요합니다.', { size: 17, color: '666666' }), { indent: 240, after: 80 }),
+      para(
+        run('코칭은 고객이 스스로 원하는 삶을 설계하고 목표를 실현할 수 있도록 돕는 파트너십입니다. ', { size: 18 }) +
+        run('코치는 조언이나 해답을 제시하지 않습니다. 모든 답은 고객 안에 있다고 믿습니다. ', { size: 18, color: '333333' }) +
+        run('고객의 현재 상황과 원하는 미래에 집중하며, 심리상담·멘토링·컨설팅과는 다릅니다. ', { size: 18, color: '333333' }) +
+        run('코칭은 현재~미래에 초점을 두며, 과거의 상처나 정신건강 문제는 다루지 않습니다. 이런 영역은 전문 상담사의 도움이 필요합니다.', { size: 18, color: '333333' }),
+        { after: 60 }
+      ),
 
-      secTitle('제3항. 세션 구성'),
-      infoTable([
-        ['세션 횟수', `총 ${data.session_count}회`, '1회 세션 시간', '약 50분 ~ 60분'],
-        ['세션 간 연락', '카카오톡 문자 메시지 (긴급상황 제외, 코칭 대화 아님)', '', ''],
-      ]),
-      emptyP(),
+      // 제3항. 비용
+      secTitle('제3항. 코칭 비용 및 결제'),
+      para(
+        run('코칭 1회 비용은 10,000원(VAT 포함)으로 계약 1주일 내 전체 코칭세션 비용을 계좌 이체합니다. ', { size: 18 }) +
+        run('국민은행 375302-04-074200 (이연임)', { size: 18, bold: true }),
+        { after: 60 }
+      ),
 
-      secTitle('제4항. 코칭 비용 및 결제'),
-      infoTable([
-        ['1회 비용', '10,000원 (부가세 포함)', '결제 시기', '계약 후 일주일 이내'],
-        ['결제 방법', '계좌이체 — 국민은행 375302-04-074200 (이연임)', '', ''],
-      ]),
-      emptyP(),
-
-      secTitle('제5항. 일정 변경 및 취소 정책'),
+      // 제4항. 일정 변경 및 취소
+      secTitle('제4항. 일정 변경 및 취소 정책'),
       bl('세션 48시간 전까지 변경/취소 요청 시: 전액 환불 또는 일정 재조정'),
       bl('세션 24시간 전까지 요청 시: 50% 환불 / 24시간 이내 취소 또는 무단 불참 시: 환불 불가'),
-      bl('코치 사정으로 취소 시: 전액 환불 또는 일정 재조정'),
-      para(run('* 천재지변, 응급상황 등 불가피한 사정은 별도로 협의합니다.', { size: 16, color: '888888' }), { after: 60 }),
+      bl('코치 사정으로 취소 시: 전액 환불 또는 일정 재조정 (천재지변, 응급상황 등 불가피한 경우 별도 협의)'),
 
-      secTitle('제6항. 비밀 유지'),
+      // 제5항. 비밀 유지
+      secTitle('제5항. 비밀 유지'),
       bl('코치는 고객의 동의 없이 제3자에게 내용을 공유하지 않습니다.'),
-      bl('위해 가능성이 있다고 판단될 경우 법적 의무에 따라 예외적으로 공유될 수 있으며, 슈퍼비전 시 개인 식별 정보는 제거 후 활용합니다.'),
-
-      secTitle('제7항. 코치와 고객의 역할'),
-      `<w:tbl><w:tblPr>${tblBorders}<w:tblW w:w="5000" w:type="pct"/></w:tblPr>` +
-        `<w:tr>${tc('코치의 역할', { bold: true, shading: 'F0F0F0', w: 2500 })}${tc('고객의 역할', { bold: true, shading: 'F0F0F0', w: 2500 })}</w:tr>` +
-        `<w:tr>${tc('경청하고 질문하기 · 고객의 가능성 믿기 · 판단 없이 함께하기 · ICF 윤리규정 준수', { w: 2500 })}${tc('솔직하게 참여하기 · 세션 사이 행동 실천하기 · 변화의 주체는 나 자신임을 인식하기 · 코치에게 솔직히 말하기', { w: 2500 })}</w:tr>` +
-      '</w:tbl>',
+      bl('단, 위해 가능성이 있다고 판단될 경우 법적 의무에 따라 예외적으로 공유될 수 있으며, 슈퍼비전 시 개인 식별 정보는 제거 후 활용합니다.'),
       emptyP(),
 
-      secTitle('제8항. 계약 종료'),
-      bl('코치 또는 고객은 언제든지 2주 전 사전 통보로 계약을 종료할 수 있으며, 미사용 세션 비용은 환불됩니다.'),
-
-      para(run('제9항. 합의 및 서명', { bold: true, size: 20 }), { borderBoth: true, before: 240, after: 100 }),
-      para(run('위 내용을 충분히 이해하고 동의합니다. 궁금한 점이 있으면 서명 전에 언제든 물어봐 주세요.', { size: 18 }), { after: 120 }),
-
+      // 서명
+      para(run('위 내용을 충분히 이해하고 동의합니다.', { bold: true, size: 18 }), { borderTop: true, before: 160, after: 100 }),
       `<w:tbl><w:tblPr>${tblBorders}<w:tblW w:w="5000" w:type="pct"/>` +
         `<w:tblCellMar><w:top w:w="120" w:type="dxa"/><w:left w:w="160" w:type="dxa"/><w:bottom w:w="120" w:type="dxa"/><w:right w:w="160" w:type="dxa"/></w:tblCellMar>` +
       `</w:tblPr><w:tr>` +
-        sigCell('코치 (Coach)', '이 연 임', '날짜: 2026년      월      일') +
-        sigCell('고객 (Client)', data.name, '날짜: ' + submitDate) +
+        sigCell('코치 (Coach)', '이 연 임', '날짜:          년      월      일') +
+        sigCell('고객 (Client)', esc(data.name), '날짜: ' + submitDate) +
       `</w:tr></w:tbl>`,
+
     ].join('\n');
 
     // ── ZIP 파일 구성
@@ -305,7 +267,7 @@ const Contract = (() => {
             `<w:lang w:val="ko-KR"/>` +
           `</w:rPr></w:rPrDefault>` +
           `<w:pPrDefault><w:pPr>` +
-            `<w:spacing w:after="80" w:line="276" w:lineRule="auto"/>` +
+            `<w:spacing w:after="60" w:line="240" w:lineRule="auto"/>` +
           `</w:pPr></w:pPrDefault>` +
         `</w:docDefaults>` +
         `<w:style w:type="paragraph" w:styleId="Normal"><w:name w:val="Normal"/></w:style>` +
@@ -315,7 +277,7 @@ const Contract = (() => {
     const sectPr =
       `<w:sectPr>` +
         `<w:pgSz w:w="11906" w:h="16838"/>` +
-        `<w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0"/>` +
+        `<w:pgMar w:top="1000" w:right="1100" w:bottom="1000" w:left="1100" w:header="600" w:footer="600" w:gutter="0"/>` +
       `</w:sectPr>`;
 
     zip.file('word/document.xml',
@@ -334,5 +296,5 @@ const Contract = (() => {
     });
   }
 
-  return { generate };
+  return { downloadDocx };
 })();

@@ -115,6 +115,11 @@ const Admin = (() => {
         <td>${esc(r.email)}</td>
         <td>${statusBadge(r.contract_status)}</td>
         <td>${esc(formatDate(r.created_at))}</td>
+        <td onclick="event.stopPropagation()">
+          <button class="btn-contract-dl" onclick="Admin.downloadContract(${escAttr(JSON.stringify(r))})">
+            📄 계약서
+          </button>
+        </td>
       </tr>
     `).join('');
 
@@ -178,14 +183,15 @@ const Admin = (() => {
       <span class="detail-label">이메일</span>     <span class="detail-value">${esc(reg.email)}</span>
       <span class="detail-label">연락처</span>     <span class="detail-value">${esc(reg.contact)}</span>
       <span class="detail-label">시작일</span>     <span class="detail-value">${esc(reg.start_date)}</span>
-      <span class="detail-label">종료일</span>     <span class="detail-value">${esc(reg.end_date)}</span>
-      <span class="detail-label">진행 방식</span>  <span class="detail-value">${esc(reg.session_type)}</span>
       <span class="detail-label">세션 횟수</span>  <span class="detail-value">${esc(reg.session_count)}</span>
-      <span class="detail-label">코칭 주제</span>  <span class="detail-value">${esc(reg.topic)}</span>
-      ${reg.online_link ? `<span class="detail-label">온라인 링크</span><span class="detail-value"><a href="${esc(reg.online_link)}" target="_blank">${esc(reg.online_link)}</a></span>` : ''}
       <span class="detail-label">계약서 상태</span><span class="detail-value">${statusBadge(reg.contract_status)}</span>
-      <span class="detail-label">계약서</span>     <span class="detail-value">${contractLink}</span>
       <span class="detail-label">등록일</span>     <span class="detail-value">${esc(formatDate(reg.created_at))}</span>
+      <span class="detail-label">계약서 다운로드</span>
+      <span class="detail-value">
+        <button class="btn-contract-dl" onclick="Admin.downloadContract(${escAttr(JSON.stringify(reg))})">
+          📄 Word 계약서 다운로드
+        </button>
+      </span>
     `;
 
     document.getElementById('detailModal').classList.add('open');
@@ -195,6 +201,12 @@ const Admin = (() => {
     if (!e || e.target === document.getElementById('detailModal') || !e.target) {
       document.getElementById('detailModal').classList.remove('open');
     }
+  }
+
+  // ── 계약서 Word 다운로드 ─────────────────────────────
+  async function downloadContract(reg) {
+    if (typeof reg === 'string') reg = JSON.parse(reg);
+    await Contract.downloadDocx(reg);
   }
 
   // ── 엑셀 다운로드 ────────────────────────────────────
@@ -242,7 +254,7 @@ const Admin = (() => {
     } catch { return iso; }
   }
 
-  return { init, loadData, filterTable, sortTable, openModal, closeModal, exportExcel };
+  return { init, loadData, filterTable, sortTable, openModal, closeModal, exportExcel, downloadContract };
 })();
 
 document.addEventListener('DOMContentLoaded', Admin.init);

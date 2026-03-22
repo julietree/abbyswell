@@ -18,9 +18,27 @@
 
 // ── 스프레드시트 헬퍼 ──────────────────────────────────────────
 
-function getSheet(name) {
+function getSpreadsheet() {
   const id = PropertiesService.getScriptProperties().getProperty('SHEET_ID');
-  return SpreadsheetApp.openById(id).getSheetByName(name);
+  if (!id) throw new Error('SHEET_ID가 스크립트 속성에 설정되지 않았습니다.');
+  return SpreadsheetApp.openById(id);
+}
+
+function getSheet(name) {
+  const ss = getSpreadsheet();
+  let sheet = ss.getSheetByName(name);
+  if (!sheet) {
+    // 시트가 없으면 자동 생성 + 헤더 추가
+    sheet = ss.insertSheet(name);
+    const headers = {
+      'registrations': ['id','name','email','contact','start_date','end_date','session_type','session_count','topic','online_link','contract_url','contract_status','created_at'],
+      'form_config':   ['field_id','label','type','style','bg_config','updated_at'],
+      'config':        ['key','value'],
+      'secretary_log': ['sent_at','clients','to_email','subject','status'],
+    };
+    if (headers[name]) sheet.appendRow(headers[name]);
+  }
+  return sheet;
 }
 
 function getConfigValue(key) {

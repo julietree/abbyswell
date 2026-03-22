@@ -18,7 +18,10 @@ const API = (() => {
     const res = await fetch(url);
     if (!res.ok) throw new Error(`GAS GET 실패: ${res.status}`);
     const data = await res.json();
-    if (data.status === 'error') throw new Error('GAS 오류: ' + (data.message || '알 수 없는 오류'));
+    // 두 가지 응답 형식 처리: {status,result} 또는 {success,data}
+    if (data.status === 'error' || data.success === false) {
+      throw new Error('GAS 오류: ' + (data.message || data.error || '알 수 없는 오류'));
+    }
     return data;
   }
 
@@ -35,7 +38,10 @@ const API = (() => {
       });
       if (!res.ok) throw new Error(`GAS POST 실패: ${res.status}`);
       const data = await res.json();
-      if (data.status === 'error') throw new Error('GAS 오류: ' + (data.message || '알 수 없는 오류'));
+      // 두 가지 응답 형식 처리: {status,result} 또는 {success,data}
+      if (data.status === 'error' || data.success === false) {
+        throw new Error('GAS 오류: ' + (data.message || data.error || '알 수 없는 오류'));
+      }
       return data;
     } catch (err) {
       if (retryCount < 1) {
@@ -68,17 +74,17 @@ const API = (() => {
    */
   async function getRegistrations() {
     const data = await gasGet({ action: 'getRegistrations' });
-    return data.result || [];
+    return data.result || data.data || [];
   }
 
   async function getFormConfig() {
     const data = await gasGet({ action: 'getFormConfig' });
-    return data.result || [];
+    return data.result || data.data || [];
   }
 
   async function getConfig() {
     const data = await gasGet({ action: 'getConfig' });
-    return data.result || {};
+    return data.result || data.data || {};
   }
 
   /**

@@ -13,6 +13,10 @@
 
   <!-- SheetJS (엑셀 다운로드) -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- JSZip + jsPDF (계약서 Word 생성) -->
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 </head>
 <body>
 
@@ -141,6 +145,7 @@
               <th data-key="email"           onclick="Admin.sortTable('email')">이메일 <span class="sort-icon">↕</span></th>
               <th data-key="contract_status" onclick="Admin.sortTable('contract_status')">계약서 상태 <span class="sort-icon">↕</span></th>
               <th data-key="created_at"      onclick="Admin.sortTable('created_at')">등록일 <span class="sort-icon">↕</span></th>
+              <th>계약서</th>
             </tr>
           </thead>
           <tbody id="tableBody">
@@ -174,6 +179,8 @@
 
 <script src="config.js"></script>
 <script src="assets/js/api.js"></script>
+<script src="template/contract_template.js"></script>
+<script src="assets/js/contract.js"></script>
 <script src="assets/js/calendar.js"></script>
 <script src="assets/js/secretary.js"></script>
 <script src="assets/js/admin.js"></script>

@@ -610,6 +610,27 @@ tbody td {
 }
 .detail-value a:hover { text-decoration: underline; }
 
+/* ── 계약서 다운로드 버튼 ──────────────────────── */
+.btn-contract-dl {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #2563eb;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s;
+}
+.btn-contract-dl:hover {
+  background: #dbeafe;
+  border-color: #93c5fd;
+}
+
 /* ── 반응형 ─────────────────────────────────── */
 @media (max-width: 900px) {
   .sidebar { width: 64px; }
