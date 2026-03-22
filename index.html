@@ -60,7 +60,7 @@
          섹션 1 — 기본 정보 & 연락처
          ══════════════════════════════════════ -->
     <div class="section-card active" id="section-1">
-      <h2 class="section-title"><span class="section-icon">📋</span> 기본 정보</h2>
+      <h2 class="section-title"><span class="section-num">1</span> 기본 정보</h2>
       <p class="section-desc">코칭 계약의 기본 사항과 연락처를 입력해 주세요.</p>
 
       <!-- 고객 이름 -->
@@ -95,7 +95,7 @@
          섹션 2 — 세션 구성 & 비용 안내
          ══════════════════════════════════════ -->
     <div class="section-card" id="section-2">
-      <h2 class="section-title"><span class="section-icon">🗓</span> 세션 구성 & 비용 안내</h2>
+      <h2 class="section-title"><span class="section-num">2</span> 세션 구성 & 비용 안내</h2>
       <p class="section-desc">한 세션당 시간은 약 50~60분 소요됩니다. 희망하시는 세션 횟수를 입력하고 비용 안내를 확인해주세요.</p>
 
       <!-- 세션 횟수 -->
@@ -131,40 +131,17 @@
       </div>
 
       <!-- 비용 안내 -->
-      <div class="cost-info-section">
-        <h3 class="cost-info-title">💳 비용 안내</h3>
-
-        <div class="cost-info-card">
-          <div class="cost-info-row">
-            <span class="cost-label">1회 코칭 비용</span>
-            <span class="cost-value">10,000원 <span class="cost-note">(부가세 포함)</span></span>
-          </div>
+      <div class="cost-text-section">
+        <p class="cost-line"><span class="cost-key">1회 코칭 비용</span> 10,000원 (부가세 포함)</p>
+        <p class="cost-line"><span class="cost-key">결제 방법</span> 계좌이체</p>
+        <div class="account-copy-row">
+          <span class="account-number">국민은행 375302-04-074200 (이연임)</span>
+          <button type="button" class="copy-btn" onclick="Survey.copyAccount()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+            복사
+          </button>
         </div>
-
-        <div class="cost-info-card">
-          <div class="cost-info-row">
-            <span class="cost-label">결제 방법</span>
-            <div class="cost-value-row">
-              <span class="cost-value">계좌이체</span>
-              <div class="account-copy-row">
-                <span class="account-number">국민은행 375302-04-074200</span>
-                <button type="button" class="copy-btn" id="copyAccountBtn" title="계좌번호 복사" onclick="Survey.copyAccount()">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                  </svg>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="cost-info-card">
-          <div class="cost-info-row">
-            <span class="cost-label">결제 시기</span>
-            <span class="cost-value">계약 후 일주일 이내</span>
-          </div>
-        </div>
+        <p class="cost-line"><span class="cost-key">결제 시기</span> 계약 후 일주일 이내</p>
       </div>
 
       <div class="nav-buttons">
@@ -177,69 +154,41 @@
          섹션 3 — 약관 동의
          ══════════════════════════════════════ -->
     <div class="section-card" id="section-3">
-      <h2 class="section-title"><span class="section-icon">✅</span> 약관 동의</h2>
+      <h2 class="section-title"><span class="section-num">3</span> 약관 동의</h2>
       <p class="section-desc">아래 내용을 읽고 하단에서 동의해 주세요.</p>
 
       <!-- 전체 약관 내용 -->
       <div class="terms-full-content">
 
         <div class="terms-article">
-          <h4 class="terms-article-title">코칭이란 무엇인가요?</h4>
-          <p>코칭은 고객이 스스로 원하는 삶을 설계하고 목표를 실현할 수 있도록 돕는 파트너십입니다.</p>
-          <ul>
-            <li>코치는 조언이나 해답을 제시하지 않습니다.</li>
-            <li>모든 답은 고객 안에 있다고 믿습니다.</li>
-            <li>고객의 현재 상황과 원하는 미래에 집중합니다.</li>
-            <li>심리상담, 멘토링, 컨설팅과는 다릅니다.</li>
-          </ul>
-          <p class="terms-note">💡 코칭은 현재~미래에 초점을 두며, 과거의 상처나 정신건강 문제를 다루지 않습니다. 이런 영역은 전문 상담사의 도움이 필요합니다.</p>
+          <h4 class="terms-article-title">코칭이란</h4>
+          <p>코칭은 고객이 스스로 원하는 삶을 설계하고 목표를 실현할 수 있도록 돕는 파트너십입니다. 코치는 조언이나 해답을 제시하지 않으며, 모든 답은 고객 안에 있다고 믿습니다. 고객의 현재 상황과 원하는 미래에 집중하되, 과거의 상처나 정신건강 문제는 다루지 않습니다. 해당 영역은 전문 상담사의 도움이 필요합니다.</p>
         </div>
 
         <div class="terms-article">
-          <h4 class="terms-article-title">세션 간 연락</h4>
-          <p>세션 사이의 연락은 카카오톡 문자 메시지로 진행됩니다. 긴급 상황을 제외하고 코칭 대화는 세션 중에 이루어집니다.</p>
+          <h4 class="terms-article-title">코칭 비용 및 결제</h4>
+          <p>코칭 1회 비용은 10,000원(VAT 포함)이며, 계약 후 1주일 이내에 전체 코칭 비용을 계좌이체로 납부합니다.</p>
+          <p class="terms-note">※ 계좌정보: 국민은행 375302-04-074200 (이연임)</p>
         </div>
 
         <div class="terms-article">
-          <h4 class="terms-article-title">일정 변경 및 취소 정책</h4>
-          <ul>
-            <li>세션 48시간 전까지 변경/취소 요청 시: 전액 환불 또는 일정 재조정</li>
-            <li>세션 24시간 전까지 요청 시: 50% 환불</li>
-            <li>24시간 이내 취소 또는 무단 불참 시: 환불 불가</li>
-            <li>코치 사정으로 취소 시: 전액 환불 또는 일정 재조정</li>
-          </ul>
-          <p class="terms-note">* 천재지변, 응급상황 등 불가피한 사정은 별도로 협의합니다.</p>
+          <h4 class="terms-article-title">일정 변경 및 취소</h4>
+          <p>코칭 48시간 전까지 취소 시 전액 환불, 24시간 전까지 취소 시 50% 환불, 24시간 이내 취소 또는 무단 불참 시 환불이 불가합니다. 일정 변경은 48시간 전까지 요청 시 재조정 가능합니다. 코치 사정으로 코칭 취소 시 전액 환불 또는 고객 선택에 따라 일정을 재조정하며, 불가피한 사정(천재지변, 응급상황 등)은 별도 협의합니다.</p>
         </div>
 
         <div class="terms-article">
           <h4 class="terms-article-title">비밀 유지</h4>
-          <ul>
-            <li>코치는 고객의 동의 없이 제3자에게 내용을 공유하지 않습니다.</li>
-            <li>단, 고객 본인 또는 타인에게 위해 가능성이 있다고 판단될 경우, 법적 의무에 따라 예외적으로 공유될 수 있습니다.</li>
-            <li>코치가 슈퍼비전을 받는 경우, 개인 식별 정보는 제거 후 활용할 수 있습니다.</li>
-          </ul>
+          <p>코치는 고객의 동의 없이 제3자에게 코칭의 어떤 내용도 공유하지 않습니다. 단, 고객 본인 또는 타인에게 위해 가능성이 있다고 판단될 경우 법적 의무에 따라 예외적으로 공유할 수 있습니다.</p>
         </div>
 
         <div class="terms-article">
-          <h4 class="terms-article-title">코치와 고객의 역할</h4>
-          <div class="role-table">
-            <div class="role-row">
-              <span class="role-label">코치</span>
-              <span class="role-desc">경청하고 질문하기 / 고객의 가능성 믿기 / 판단 없이 함께하기 / ICF 윤리규정 준수</span>
-            </div>
-            <div class="role-row">
-              <span class="role-label">고객</span>
-              <span class="role-desc">솔직하게 참여하기 / 세션 사이 행동 실천하기 / 변화의 주체는 나 자신임을 인식하기 / 필요한 게 있으면 코치에게 솔직히 말하기</span>
-            </div>
-          </div>
+          <h4 class="terms-article-title">고객과 코치의 역할</h4>
+          <p>고객은 변화의 주체가 자기 자신임을 기억하며, 신뢰를 바탕으로 솔직하게 나누고 코칭 사이의 실천을 통해 성장을 만들어갑니다. 코치는 고객의 가능성을 온전히 믿으며, 판단 없는 경청과 질문으로 함께합니다. 모든 과정은 ICF 윤리규정을 준수하며 이루어집니다.</p>
         </div>
 
         <div class="terms-article">
           <h4 class="terms-article-title">계약 종료</h4>
-          <ul>
-            <li>코치 또는 고객은 언제든지 2주 전 사전 통보로 계약을 종료할 수 있습니다.</li>
-            <li>미진행 코칭 비용은 환불됩니다.</li>
-          </ul>
+          <p>고객 또는 코치는 언제든지 2주 전 사전 통보로 계약을 종료할 수 있으며, 미진행 코칭 비용은 환불됩니다.</p>
         </div>
 
         <div class="terms-article terms-signature-article">
@@ -268,7 +217,7 @@
 
   <!-- 완료 화면 -->
   <div class="section-card completion-screen" id="completionScreen">
-    <div class="completion-icon">🌿</div>
+    <img src="assets/images/abbys-well.png" alt="Abby's Well" class="completion-img">
     <h2 class="completion-title">신청해주셔서 감사합니다 :)</h2>
     <p class="completion-desc">
       구체적인 일정을 확정하기 위해 연락드리겠습니다. 🌿

@@ -124,9 +124,10 @@
     <div class="table-card">
       <div class="table-toolbar">
         <h2 class="card-title">📋 등록 현황</h2>
-        <div style="display:flex;gap:10px;align-items:center;">
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
           <input class="table-search" type="search" id="tableSearch"
                  placeholder="이름 / 이메일 검색" oninput="Admin.filterTable()">
+          <button class="btn btn-danger" onclick="Admin.deleteSelected()">🗑 선택 삭제</button>
           <button class="btn btn-outline" onclick="Admin.loadData()" style="white-space:nowrap;">
             🔄 새로고침
           </button>
@@ -137,15 +138,14 @@
         <table id="registrationsTable">
           <thead>
             <tr>
-              <th data-key="name"            onclick="Admin.sortTable('name')">이름 <span class="sort-icon">↕</span></th>
-              <th data-key="start_date"      onclick="Admin.sortTable('start_date')">시작일 <span class="sort-icon">↕</span></th>
-              <th data-key="end_date"        onclick="Admin.sortTable('end_date')">종료일 <span class="sort-icon">↕</span></th>
-              <th data-key="session_type"    onclick="Admin.sortTable('session_type')">진행 방식 <span class="sort-icon">↕</span></th>
-              <th data-key="session_count"   onclick="Admin.sortTable('session_count')">세션 횟수 <span class="sort-icon">↕</span></th>
-              <th data-key="email"           onclick="Admin.sortTable('email')">이메일 <span class="sort-icon">↕</span></th>
-              <th data-key="contract_status" onclick="Admin.sortTable('contract_status')">계약서 상태 <span class="sort-icon">↕</span></th>
-              <th data-key="created_at"      onclick="Admin.sortTable('created_at')">등록일 <span class="sort-icon">↕</span></th>
+              <th><input type="checkbox" id="selectAllCb" onchange="Admin.toggleSelectAll(this)" title="전체선택"></th>
+              <th data-key="name"          onclick="Admin.sortTable('name')">이름 <span class="sort-icon">↕</span></th>
+              <th data-key="created_at"   onclick="Admin.sortTable('created_at')">신청일 <span class="sort-icon">↕</span></th>
+              <th data-key="session_count" onclick="Admin.sortTable('session_count')">희망세션 횟수 <span class="sort-icon">↕</span></th>
+              <th data-key="contact"      onclick="Admin.sortTable('contact')">전화번호 <span class="sort-icon">↕</span></th>
+              <th data-key="email"        onclick="Admin.sortTable('email')">이메일 <span class="sort-icon">↕</span></th>
               <th>계약서</th>
+              <th>첫차수</th>
             </tr>
           </thead>
           <tbody id="tableBody">

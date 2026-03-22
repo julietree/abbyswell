@@ -96,6 +96,10 @@ const Admin = (() => {
   function renderTable() {
     const tbody = document.getElementById('tableBody');
 
+    // 전체선택 체크박스 헤더 업데이트
+    const selectAllCb = document.getElementById('selectAllCb');
+    if (selectAllCb) selectAllCb.checked = false;
+
     if (filtered.length === 0) {
       showEmptyState('등록된 데이터가 없습니다.');
       renderPagination(0);
@@ -106,24 +110,64 @@ const Admin = (() => {
     const page  = filtered.slice(start, start + PAGE_SIZE);
 
     tbody.innerHTML = page.map(r => `
-      <tr onclick="Admin.openModal(${escAttr(JSON.stringify(r))})">
-        <td>${esc(r.name)}</td>
-        <td>${esc(r.start_date)}</td>
-        <td>${esc(r.end_date)}</td>
-        <td>${esc(r.session_type)}</td>
-        <td>${esc(r.session_count)}</td>
-        <td>${esc(r.email)}</td>
-        <td>${statusBadge(r.contract_status)}</td>
-        <td>${esc(formatDate(r.created_at))}</td>
+      <tr>
         <td onclick="event.stopPropagation()">
-          <button class="btn-contract-dl" onclick="Admin.downloadContract(${escAttr(JSON.stringify(r))})">
-            📄 계약서
-          </button>
+          <input type="checkbox" class="row-checkbox" data-id="${esc(r.id || r.created_at)}">
+        </td>
+        <td onclick="Admin.openModal(${escAttr(JSON.stringify(r))})" style="cursor:pointer">${esc(r.name)}</td>
+        <td>${esc(formatDate(r.created_at))}</td>
+        <td>${esc(r.session_count)}회</td>
+        <td>${esc(r.contact)}</td>
+        <td>${esc(r.email)}</td>
+        <td onclick="event.stopPropagation()">
+          <button class="btn-dl-sm" onclick="Admin.downloadContract(${escAttr(JSON.stringify(r))})">📄 다운로드</button>
+        </td>
+        <td onclick="event.stopPropagation()">
+          <input type="datetime-local" class="first-session-input"
+            value="${esc(r.first_session || '')}"
+            onchange="Admin.saveFirstSession(${escAttr(JSON.stringify(r.id || r.created_at))}, this.value)"
+            style="font-size:12px;border:1px solid #ddd;border-radius:6px;padding:3px 6px;">
         </td>
       </tr>
     `).join('');
 
     renderPagination(filtered.length);
+  }
+
+  // ── 선택 삭제 ────────────────────────────────────────
+  function deleteSelected() {
+    const checkboxes = document.querySelectorAll('.row-checkbox:checked');
+    if (checkboxes.length === 0) {
+      alert('삭제할 항목을 선택해 주세요.');
+      return;
+    }
+    if (!confirm(`선택한 ${checkboxes.length}개 항목을 삭제하시겠습니까?`)) return;
+
+    const ids = Array.from(checkboxes).map(cb => cb.dataset.id);
+    allData = allData.filter(r => !ids.includes(String(r.id || r.created_at)));
+    filtered = filtered.filter(r => !ids.includes(String(r.id || r.created_at)));
+    renderTable();
+    Calendar.update(allData);
+  }
+
+  // ── 첫차수 저장 ──────────────────────────────────────
+  function saveFirstSession(id, value) {
+    const row = allData.find(r => String(r.id || r.created_at) === String(id));
+    if (row) {
+      row.first_session = value;
+    }
+    const fRow = filtered.find(r => String(r.id || r.created_at) === String(id));
+    if (fRow) {
+      fRow.first_session = value;
+    }
+    Calendar.update(allData);
+  }
+
+  // ── 전체선택 토글 ────────────────────────────────────
+  function toggleSelectAll(cb) {
+    document.querySelectorAll('.row-checkbox').forEach(box => {
+      box.checked = cb.checked;
+    });
   }
 
   function showEmptyState(msg) {
@@ -254,7 +298,7 @@ const Admin = (() => {
     } catch { return iso; }
   }
 
-  return { init, loadData, filterTable, sortTable, openModal, closeModal, exportExcel, downloadContract };
+  return { init, loadData, filterTable, sortTable, openModal, closeModal, exportExcel, downloadContract, deleteSelected, saveFirstSession, toggleSelectAll };
 })();
 
 document.addEventListener('DOMContentLoaded', Admin.init);

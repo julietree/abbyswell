@@ -631,6 +631,39 @@ tbody td {
   border-color: #93c5fd;
 }
 
+.btn-danger {
+  background: #e05252;
+  color: #fff;
+  border: none;
+}
+.btn-danger:hover { background: #c43d3d; }
+
+.btn-dl-sm {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1.5px solid #93c5fd;
+  border-radius: 6px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+.btn-dl-sm:hover {
+  background: #dbeafe;
+  border-color: #60a5fa;
+}
+
+.manual-chip {
+  background: #fef3c7 !important;
+  border-color: #f59e0b !important;
+  color: #92400e !important;
+}
+
 /* ── 반응형 ─────────────────────────────────── */
 @media (max-width: 900px) {
   .sidebar { width: 64px; }

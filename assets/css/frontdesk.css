@@ -180,8 +180,19 @@ body {
   gap: 8px;
 }
 
-.section-title .section-icon {
-  font-size: 18px;
+.section-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  background: #2d6a4f;
+  color: #fff;
+  border-radius: 50%;
+  font-size: 13px;
+  font-weight: 700;
+  margin-right: 8px;
+  flex-shrink: 0;
 }
 
 .section-desc {
@@ -637,6 +648,13 @@ details[open] .terms-summary::after {
   line-height: 1.8;
 }
 
+.completion-img {
+  max-width: 220px;
+  width: 100%;
+  margin: 0 auto 20px;
+  display: block;
+}
+
 /* â”€â”€ ë¡œë”© ì˜¤ë²„ë ˆì´ â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .loading-overlay {
   display: none;
@@ -790,6 +808,35 @@ details[open] .terms-summary::after {
   border-color: var(--color-success);
   color: var(--color-success);
   background: #f0fbf0;
+}
+
+.copy-btn {
+  gap: 4px;
+  padding: 0 10px;
+  width: auto;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* â”€â”€ ë¹„ìš© í…ìŠ¤íŠ¸ ì„¹ì…˜ â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.cost-text-section {
+  background: #f9f9f7;
+  border-radius: 10px;
+  padding: 16px 18px;
+  margin: 12px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.cost-line {
+  font-size: 14px;
+  color: #333;
+  margin: 0;
+}
+.cost-key {
+  font-weight: 600;
+  color: #2d6a4f;
+  margin-right: 8px;
 }
 
 /* â”€â”€ ì•½ê´€ ì „ì²´ ë‚´ìš© â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
@@ -967,7 +1014,7 @@ details[open] .terms-summary::after {
   }
 }
 
-/* ¦¡¦¡ ¼±È£ ½Ã°£´ë Ã¼Å©¹Ú½º ¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡ */
+/* ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½È£ ï¿½Ã°ï¿½ï¿½ï¿½ Ã¼Å©ï¿½Ú½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ */
 .timeslot-options {
   display: flex;
   flex-direction: column;
