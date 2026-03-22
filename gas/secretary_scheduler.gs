@@ -131,16 +131,9 @@ function handleGetConfig() {
 function parseSheetToObjects(values) {
   if (!values || values.length < 2) return [];
   const headers = values[0];
-  const tz = Session.getScriptTimeZone();
   return values.slice(1).map(row =>
     headers.reduce((obj, header, i) => {
-      const val = row[i];
-      if (val instanceof Date) {
-        // 구글 시트가 날짜로 자동 변환한 셀 → "yyyy-MM-ddTHH:mm" 형식으로 복원
-        obj[header] = Utilities.formatDate(val, tz, "yyyy-MM-dd'T'HH:mm");
-      } else {
-        obj[header] = val !== undefined ? String(val) : '';
-      }
+      obj[header] = row[i] !== undefined ? String(row[i]) : '';
       return obj;
     }, {})
   );
@@ -244,7 +237,10 @@ function handleUpdateFirstSession(registrationId, value) {
   // 해당 registrationId 행 찾아서 업데이트
   for (let i = 1; i < data.length; i++) {
     if (String(data[i][0]) === String(registrationId)) {
-      sheet.getRange(i + 1, colIdx + 1).setValue(value);
+      // setNumberFormat('@') 으로 텍스트 형식 강제 → 구글 시트 날짜 자동변환 방지
+      const cell = sheet.getRange(i + 1, colIdx + 1);
+      cell.setNumberFormat('@');
+      cell.setValue(value);
       return { message: '첫차수 업데이트 완료' };
     }
   }
