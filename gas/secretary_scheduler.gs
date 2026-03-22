@@ -96,8 +96,18 @@ function doGet(e) {
 }
 
 function handleGetRegistrations() {
-  const sheet   = getSheet('registrations');
-  const values  = sheet.getDataRange().getValues();
+  const sheet    = getSheet('registrations');
+  const expected = ['id','name','email','contact','start_date','end_date','session_type','session_count','topic','online_link','contract_url','contract_status','created_at'];
+  const values   = sheet.getDataRange().getValues();
+
+  // 헤더 행 자동 수정: 첫 번째 행이 헤더가 아닌 경우 삽입
+  if (values.length > 0 && values[0][0] !== 'id') {
+    sheet.insertRowBefore(1);
+    sheet.getRange(1, 1, 1, expected.length).setValues([expected]);
+    const fixed = sheet.getDataRange().getValues();
+    return parseSheetToObjects(fixed);
+  }
+
   return parseSheetToObjects(values);
 }
 

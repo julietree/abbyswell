@@ -12,20 +12,12 @@
 const Modify = (() => {
   // 수정 가능한 문항 (읽기 전용 고정값 제외)
   const EDITABLE_FIELDS = [
-    { id: 'name',                 label: '고객 이름',       type: 'text' },
-    { id: 'start_date',           label: '계약 시작일',     type: 'date' },
-    { id: 'end_date',             label: '계약 종료일',     type: 'date' },
-    { id: 'session_type',         label: '진행 방식',       type: 'select' },
-    { id: 'session_count',        label: '세션 횟수',       type: 'number' },
-    { id: 'topic',                label: '코칭 주제',       type: 'text' },
-    { id: 'email',                label: '이메일 주소',     type: 'email' },
-    { id: 'contact',              label: '연락처',          type: 'text' },
-    { id: 'online_link',          label: '온라인 링크',     type: 'url' },
-    { id: 'signature',            label: '서명',            type: 'canvas' },
-    { id: 'agree_cancellation',   label: '취소 정책 동의',  type: 'checkbox' },
-    { id: 'agree_confidentiality','label': '비밀 유지 동의', type: 'checkbox' },
-    { id: 'agree_roles',          label: '역할 확인',       type: 'checkbox' },
-    { id: 'agree_termination',    label: '계약 종료 동의',  type: 'checkbox' },
+    { id: 'name',            label: '고객 이름',         type: 'text',     section: 1 },
+    { id: 'email',           label: '이메일 주소',       type: 'email',    section: 1 },
+    { id: 'contact',         label: '연락처',            type: 'text',     section: 1 },
+    { id: 'session_count',   label: '희망 세션 횟수',    type: 'number',   section: 2 },
+    { id: 'preferred_times', label: '선호 요일/시간대',  type: 'checkbox', section: 2 },
+    { id: 'agree_all',       label: '약관 동의 문구',    type: 'checkbox', section: 3 },
   ];
 
   // 로컬 편집 상태

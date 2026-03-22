@@ -678,3 +678,39 @@ tbody td {
   .cal-cell { min-height: 56px; }
   .event-chip { display: none; }
 }
+
+
+/* ── 첫차수 시간 선택기 ──────────────────────── */
+.time-picker-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 160px;
+}
+.time-picker-cell input[type=date] {
+  padding: 4px 6px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 12px;
+  width: 100%;
+  box-sizing: border-box;
+}
+.time-selects {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.time-selects select {
+  padding: 4px 4px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 12px;
+  flex: 1;
+  min-width: 0;
+}
+.time-colon {
+  font-weight: 700;
+  font-size: 14px;
+  color: #555;
+}
+

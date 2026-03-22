@@ -48,15 +48,6 @@
     <h1 class="topbar-title">코칭 현황</h1>
     <div class="topbar-actions">
 
-      <!-- Secretary Mode 토글 -->
-      <div class="secretary-toggle">
-        <span class="secretary-label" id="secretaryLabel">비서 모드</span>
-        <label class="toggle-switch" title="매주 일요일 9시 자동 이메일 발송">
-          <input type="checkbox" id="secretaryToggle">
-          <span class="toggle-track"></span>
-        </label>
-      </div>
-
       <button class="btn btn-excel" id="btnExcel" onclick="Admin.exportExcel()">
         📥 엑셀 다운로드
       </button>
@@ -74,20 +65,6 @@
         <div>
           <div class="stat-value" id="statTotal">-</div>
           <div class="stat-label">전체 등록</div>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon">✅</div>
-        <div>
-          <div class="stat-value" id="statSent">-</div>
-          <div class="stat-label">계약서 발송 완료</div>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon">⏳</div>
-        <div>
-          <div class="stat-value" id="statPending">-</div>
-          <div class="stat-label">대기 중</div>
         </div>
       </div>
       <div class="stat-card">
@@ -128,9 +105,6 @@
           <input class="table-search" type="search" id="tableSearch"
                  placeholder="이름 / 이메일 검색" oninput="Admin.filterTable()">
           <button class="btn btn-danger" onclick="Admin.deleteSelected()">🗑 선택 삭제</button>
-          <button class="btn btn-outline" onclick="Admin.loadData()" style="white-space:nowrap;">
-            🔄 새로고침
-          </button>
         </div>
       </div>
 

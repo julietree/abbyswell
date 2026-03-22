@@ -36,8 +36,26 @@ const Calendar = (() => {
     render();
   }
 
-  // ── 이벤트 추가 다이얼로그 ──────────────────────────
-  function showAddEventDialog(dateStr) {
+  // ── 공통 다이얼로그 빌더 ────────────────────────────
+  const MINS_DLG = ['00','10','20','30','40','50'];
+  const HOURS_DLG = Array.from({length: 24}, (_, i) => String(i).padStart(2,'0'));
+
+  function buildTimeSelects(hourVal, minVal) {
+    const hOpts = HOURS_DLG.map(h =>
+      `<option value="${h}"${h === hourVal ? ' selected' : ''}>${h}</option>`
+    ).join('');
+    const mOpts = MINS_DLG.map(m =>
+      `<option value="${m}"${m === minVal ? ' selected' : ''}>${m}</option>`
+    ).join('');
+    return `
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">
+        <select id="dlgHour" style="padding:7px 8px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;flex:1;">${hOpts}</select>
+        <span style="font-weight:700;font-size:16px;">:</span>
+        <select id="dlgMin" style="padding:7px 8px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;flex:1;">${mOpts}</select>
+      </div>`;
+  }
+
+  function showEventDialog({ title, dateStr, name='', hourVal='09', minVal='00', sessionNum='1', onConfirm, confirmLabel='추가' }) {
     const existing = document.getElementById('calEventDialog');
     if (existing) existing.remove();
 
@@ -46,16 +64,18 @@ const Calendar = (() => {
     dialog.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:2000;display:flex;align-items:center;justify-content:center;';
     dialog.innerHTML = `
       <div style="background:#fff;border-radius:14px;padding:28px 28px 24px;width:320px;box-shadow:0 8px 32px rgba(0,0,0,0.18);">
-        <h3 style="margin:0 0 16px;font-size:16px;color:#2d6a4f;">일정 추가 — ${dateStr}</h3>
+        <h3 style="margin:0 0 16px;font-size:16px;color:#2d6a4f;">${title} — ${dateStr}</h3>
         <label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px;">이름</label>
-        <input id="dlgName" type="text" placeholder="고객 이름" style="width:100%;padding:8px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;margin-bottom:10px;">
+        <input id="dlgName" type="text" placeholder="고객 이름" value="${name}"
+          style="width:100%;padding:8px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;margin-bottom:10px;box-sizing:border-box;">
         <label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px;">시간</label>
-        <input id="dlgTime" type="time" style="width:100%;padding:8px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;margin-bottom:10px;">
+        ${buildTimeSelects(hourVal, minVal)}
         <label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px;">차수</label>
-        <input id="dlgSession" type="number" min="1" placeholder="1" style="width:100%;padding:8px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;margin-bottom:18px;">
+        <input id="dlgSession" type="number" min="1" value="${sessionNum}"
+          style="width:100%;padding:8px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;margin-bottom:18px;box-sizing:border-box;">
         <div style="display:flex;gap:10px;justify-content:flex-end;">
           <button id="dlgCancel" style="padding:8px 18px;border:1.5px solid #ddd;border-radius:50px;background:#fff;cursor:pointer;font-size:14px;">취소</button>
-          <button id="dlgConfirm" style="padding:8px 18px;border:none;border-radius:50px;background:#2d6a4f;color:#fff;cursor:pointer;font-size:14px;font-weight:700;">추가</button>
+          <button id="dlgConfirm" style="padding:8px 18px;border:none;border-radius:50px;background:#2d6a4f;color:#fff;cursor:pointer;font-size:14px;font-weight:700;">${confirmLabel}</button>
         </div>
       </div>
     `;
@@ -64,12 +84,46 @@ const Calendar = (() => {
     dialog.querySelector('#dlgCancel').addEventListener('click', () => dialog.remove());
     dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.remove(); });
     dialog.querySelector('#dlgConfirm').addEventListener('click', () => {
-      const name = dialog.querySelector('#dlgName').value.trim();
-      const time = dialog.querySelector('#dlgTime').value;
-      const sessionNum = dialog.querySelector('#dlgSession').value || '1';
-      if (!name) { alert('이름을 입력해 주세요.'); return; }
-      addManualEvent(dateStr, name, time, sessionNum);
+      const nameVal   = dialog.querySelector('#dlgName').value.trim();
+      const hour      = dialog.querySelector('#dlgHour').value;
+      const min       = dialog.querySelector('#dlgMin').value;
+      const sessionV  = dialog.querySelector('#dlgSession').value || '1';
+      if (!nameVal) { alert('이름을 입력해 주세요.'); return; }
+      onConfirm(nameVal, `${hour}:${min}`, sessionV);
       dialog.remove();
+    });
+  }
+
+  // ── 이벤트 추가 다이얼로그 ──────────────────────────
+  function showAddEventDialog(dateStr) {
+    showEventDialog({
+      title: '일정 추가',
+      dateStr,
+      confirmLabel: '추가',
+      onConfirm: (name, time, sessionNum) => addManualEvent(dateStr, name, time, sessionNum),
+    });
+  }
+
+  // ── 수동 이벤트 수정 다이얼로그 ─────────────────────
+  function showEditEventDialog(ev) {
+    const [h, m] = (ev.time || '09:00').split(':');
+    showEventDialog({
+      title: '일정 수정',
+      dateStr: ev.dateStr,
+      name: ev.name,
+      hourVal: h || '09',
+      minVal: m || '00',
+      sessionNum: ev.sessionNum || '1',
+      confirmLabel: '저장',
+      onConfirm: (name, time, sessionNum) => {
+        const events = loadManualEvents();
+        const idx = events.findIndex(e => e.id === ev.id);
+        if (idx !== -1) {
+          events[idx] = { ...events[idx], name, time, sessionNum };
+          saveManualEvents(events);
+          render();
+        }
+      },
     });
   }
 
@@ -140,11 +194,18 @@ const Calendar = (() => {
       manualEvents.filter(me => me.dateStr === dateStr).forEach(me => {
         const chip = document.createElement('div');
         chip.className = 'event-chip manual-chip';
-        chip.textContent = `${me.name} / ${me.sessionNum}차수`;
-        if (me.time) chip.title = `${me.name} / ${me.sessionNum}차수 (${me.time})`;
+        const timeLabel = me.time ? ` / ${me.time}` : '';
+        chip.textContent = `${me.name}${timeLabel} / ${me.sessionNum}차수`;
+        chip.title = `클릭: 수정`;
+        chip.style.cursor = 'pointer';
+        chip.addEventListener('click', (e) => {
+          e.stopPropagation();
+          showEditEventDialog(me);
+        });
         const delBtn = document.createElement('span');
-        delBtn.textContent = ' ×';
-        delBtn.style.cssText = 'cursor:pointer;font-weight:700;margin-left:4px;';
+        delBtn.textContent = ' 🗑';
+        delBtn.title = '삭제';
+        delBtn.style.cssText = 'cursor:pointer;margin-left:4px;font-size:11px;opacity:0.7;';
         delBtn.addEventListener('click', (e) => {
           e.stopPropagation();
           if (confirm(`"${me.name}" 일정을 삭제하시겠습니까?`)) {
@@ -188,13 +249,15 @@ const Calendar = (() => {
     const map = {};
 
     registrations.forEach(reg => {
-      // first_session 필드 우선 사용
       if (reg.first_session) {
-        const key = reg.first_session.trim().substring(0, 10);
+        const fullVal = reg.first_session.trim();
+        const key     = fullVal.substring(0, 10);
+        const timeStr = fullVal.length > 12 ? fullVal.substring(11, 16) : '';
         if (!map[key]) map[key] = [];
-        const sessionNum = reg.session_count || '';
+        // 등록 테이블에서 입력한 첫 세션은 항상 "1차수"
+        const timeLabel = timeStr ? ` / ${timeStr}` : '';
         map[key].push({
-          label: `${reg.name} / ${sessionNum ? sessionNum + '차수' : ''}`.replace(/ \/$/, ''),
+          label: `${reg.name}${timeLabel} / 1차수`,
           raw:   reg,
         });
       }
