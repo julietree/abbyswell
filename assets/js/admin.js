@@ -43,8 +43,10 @@ const Admin = (() => {
 
     // GAS에 first_session이 없으면 localStorage 캐시로 보완
     const fsCache = getFsCache();
+    console.log('[로드] localStorage 캐시:', fsCache);
     allData.forEach(reg => {
-      const key = reg.id || reg.created_at;
+      const key = reg.id || reg.created_at || reg.email || reg.name;
+      console.log('[로드] reg key:', key, 'first_session:', reg.first_session);
       if (key) {
         if (reg.first_session) {
           // GAS 값이 있으면 캐시도 최신으로 업데이트
@@ -159,8 +161,10 @@ const Admin = (() => {
     if (reg) {
       reg.first_session = value;
       // localStorage에 즉시 저장 (새로고침 후에도 유지)
-      const key = reg.id || reg.created_at;
+      // id → created_at → email → name 순으로 고유 키 결정
+      const key = reg.id || reg.created_at || reg.email || reg.name;
       if (key) setFsCache(key, value);
+      console.log('[첫차수] 저장:', key, value, '→ cache:', getFsCache());
     }
     Calendar.update(allData);
     showSaveToast('✅ 첫차수 저장됨');
