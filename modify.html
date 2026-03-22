@@ -40,25 +40,48 @@
 
   <div class="modify-body">
 
-    <!-- 왼쪽: 문항 편집 -->
+    <!-- 왼쪽: 탭 기반 에디터 -->
     <div>
-
-      <!-- 문항 텍스트 수정 -->
-      <div class="card" style="margin-bottom:20px;">
+      <div class="card">
         <div class="card-header">
-          <span class="card-title">📝 문항 텍스트 편집</span>
-          <span style="font-size:12px;color:#6b7280;">입력 가능한 문항만 표시됩니다</span>
+          <span class="card-title">📝 신청서 편집</span>
+          <span class="card-subtitle">저장 즉시 신청 페이지에 반영됩니다</span>
         </div>
-        <div class="card-body" id="fieldEditorList">
-          <p style="color:#6b7280;font-size:13px;text-align:center;padding:20px;">
-            데이터를 불러오는 중입니다...
-          </p>
-        </div>
-      </div>
 
+        <!-- 탭 -->
+        <div class="editor-tabs">
+          <button class="editor-tab active"  data-tab="fields"    onclick="Modify.switchTab('fields',    this)">🏷 문항 라벨</button>
+          <button class="editor-tab"         data-tab="sections"  onclick="Modify.switchTab('sections',  this)">📋 섹션 텍스트</button>
+          <button class="editor-tab"         data-tab="timeslots" onclick="Modify.switchTab('timeslots', this)">🕐 시간대 옵션</button>
+        </div>
+
+        <!-- 탭 1: 문항 라벨 -->
+        <div class="tab-panel active" id="tab-fields">
+          <div class="tab-panel-desc">각 입력 항목의 라벨(표시 이름)과 스타일을 수정합니다.</div>
+          <div id="fieldEditorList">
+            <p class="loading-msg">불러오는 중...</p>
+          </div>
+        </div>
+
+        <!-- 탭 2: 섹션 텍스트 -->
+        <div class="tab-panel" id="tab-sections">
+          <div class="tab-panel-desc">각 섹션의 제목과 설명 문구를 수정합니다.</div>
+          <div id="sectionEditorList">
+            <p class="loading-msg">불러오는 중...</p>
+          </div>
+        </div>
+
+        <!-- 탭 3: 시간대 옵션 -->
+        <div class="tab-panel" id="tab-timeslots">
+          <div class="tab-panel-desc">선호 시간대 체크박스 항목을 추가·수정·삭제합니다.</div>
+          <div id="timeslotEditorList"></div>
+          <button class="btn-add-timeslot" onclick="Modify.addTimeslot()">＋ 시간대 추가</button>
+        </div>
+
+      </div><!-- /.card -->
     </div>
 
-    <!-- 오른쪽: 배경 설정 + 저장 안내 -->
+    <!-- 오른쪽: 배경 설정 + 안내 -->
     <div>
 
       <!-- 배경 설정 -->
@@ -83,9 +106,7 @@
               <span class="color-label">끝 색상</span>
               <input type="color" class="color-input" id="bgColor2" value="#f5efe6" oninput="Modify.updateBgPreview()">
             </div>
-            <p style="font-size:11px;color:#9ca3af;margin-top:4px;">
-              대각선 그라디언트가 적용됩니다.
-            </p>
+            <p style="font-size:11px;color:#9ca3af;margin-top:4px;">대각선 그라디언트가 적용됩니다.</p>
           </div>
 
           <!-- 이미지 업로드 -->
@@ -106,12 +127,13 @@
       <!-- 안내 -->
       <div class="card">
         <div class="card-header"><span class="card-title">ℹ️ 수정 안내</span></div>
-        <div class="card-body" style="font-size:13px;color:#6b7280;line-height:1.8;">
-          <p>• <strong>문항 텍스트</strong>만 수정 가능합니다.</p>
-          <p>• 고정값(비용, 결제, 1회 시간 등)은 수정되지 않습니다.</p>
-          <p>• 변경사항은 <strong>계약서에도 자동 반영</strong>됩니다.</p>
-          <p>• <strong>미리보기</strong>로 신청자 화면을 확인하세요.</p>
-          <p>• 저장 후에는 즉시 반영됩니다.</p>
+        <div class="card-body guide-list">
+          <p>• <strong>문항 라벨</strong> — 각 입력칸 제목 텍스트 및 굵기/기울임 변경</p>
+          <p>• <strong>섹션 텍스트</strong> — 3개 섹션의 큰 제목과 설명 문구 변경</p>
+          <p>• <strong>시간대 옵션</strong> — 선호 시간대 체크박스 항목 추가·수정·삭제</p>
+          <p>• <strong>배경 설정</strong> — 그라디언트 색상 또는 이미지 배경 변경</p>
+          <p style="margin-top:10px;">💾 <strong>저장</strong> 후 신청 페이지를 열면 즉시 반영됩니다.</p>
+          <p>👁 <strong>미리보기</strong>로 저장 전에 먼저 확인할 수 있습니다.</p>
         </div>
       </div>
 

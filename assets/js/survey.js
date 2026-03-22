@@ -2,9 +2,13 @@
  * survey.js — 3단계 설문 렌더링 & 제출
  *
  * 섹션 구성:
- *   1. 기본 정보 (이름 / 시작일 / 이메일 / 연락처 / 온라인링크)
- *   2. 세션 구성 & 비용 안내 (세션횟수 / 비용안내)
+ *   1. 기본 정보 (이름 / 이메일 / 연락처)
+ *   2. 세션 구성 & 비용 안내 (세션횟수 / 선호시간대 / 비용안내)
  *   3. 약관 동의 (전체 약관 + 단일 체크박스 + 제출)
+ *
+ * 동적 설정:
+ *   - admin의 modify.html에서 저장한 form_config를 GAS config 시트에서 불러와
+ *     라벨 텍스트, 섹션 제목/설명, 시간대 옵션, 배경색 등을 실시간 반영
  */
 
 const Survey = (() => {
@@ -19,14 +23,121 @@ const Survey = (() => {
     }
     bindEvents();
 
+    // preview 모드: localStorage / 일반 모드: GAS에서 설정 로드
     if (new URLSearchParams(window.location.search).get('preview') === 'true') {
-      applyPreviewConfig();
+      try {
+        const cfg = JSON.parse(localStorage.getItem('preview_config') || '{}');
+        applyFormConfig(cfg);
+      } catch (err) {
+        console.warn('미리보기 설정 로드 실패:', err);
+      }
+    } else {
+      await loadFormConfig();
     }
+  }
+
+  // ── 폼 설정 로드 (GAS config 시트) ──────────────────
+  async function loadFormConfig() {
+    try {
+      const cfg = await API.getConfig();
+      if (cfg && cfg.form_config) {
+        applyFormConfig(JSON.parse(cfg.form_config));
+      }
+    } catch (err) {
+      console.warn('폼 설정 로드 실패 (기본값 사용):', err.message);
+    }
+  }
+
+  // ── 폼 설정 DOM 적용 ─────────────────────────────────
+  function applyFormConfig(config) {
+    if (!config || typeof config !== 'object') return;
+
+    // 1. 필드 라벨 (data-field 속성으로 타겟팅)
+    if (config.fields) {
+      ['name', 'email', 'contact', 'session_count', 'preferred_times'].forEach(id => {
+        const label = document.querySelector(`label[data-field="${id}"]`);
+        if (label && config.fields[id]) {
+          applyLabelNode(label, config.fields[id]);
+        }
+      });
+      // 동의 체크박스 라벨 (for="agree_all")
+      if (config.fields.agree_all?.label) {
+        const el = document.querySelector('label[for="agree_all"]');
+        if (el) {
+          el.textContent = config.fields.agree_all.label;
+          if (config.fields.agree_all.bold)   el.style.fontWeight = '700';
+          if (config.fields.agree_all.italic) el.style.fontStyle  = 'italic';
+        }
+      }
+    }
+
+    // 2. 섹션 제목 & 설명
+    if (config.sections) {
+      [1, 2, 3].forEach(num => {
+        const s = config.sections[num] || config.sections[String(num)];
+        if (!s) return;
+        const sec = document.getElementById(`section-${num}`);
+        if (!sec) return;
+
+        if (s.title) {
+          const titleEl = sec.querySelector('.section-title');
+          if (titleEl) {
+            const badge = titleEl.querySelector('.section-num');
+            titleEl.textContent = '';
+            if (badge) titleEl.appendChild(badge);
+            titleEl.appendChild(document.createTextNode(' ' + s.title));
+          }
+        }
+        if (s.desc) {
+          const descEl = sec.querySelector('.section-desc');
+          if (descEl) descEl.textContent = s.desc;
+        }
+      });
+    }
+
+    // 3. 시간대 옵션 (추가/삭제/수정 반영)
+    if (config.timeslots && config.timeslots.length > 0) {
+      const container = document.querySelector('.timeslot-options');
+      if (container) {
+        container.innerHTML = config.timeslots.map(slot => `
+          <label class="timeslot-option">
+            <input type="checkbox" name="preferred_times" value="${escHtml(slot.value)}">
+            <span class="timeslot-label">${escHtml(slot.label)}</span>
+          </label>
+        `).join('');
+      }
+    }
+
+    // 4. 배경 색상 / 이미지
+    if (config.bg) {
+      if (config.bg.type === 'color' && config.bg.color1) {
+        document.body.style.background =
+          `linear-gradient(135deg, ${config.bg.color1} 0%, ${config.bg.color2} 100%)`;
+      } else if (config.bg.type === 'image' && config.bg.image) {
+        document.body.style.backgroundImage    = `url(${config.bg.image})`;
+        document.body.style.backgroundSize     = 'cover';
+        document.body.style.backgroundAttachment = 'fixed';
+      }
+    }
+  }
+
+  /** label 요소의 첫 텍스트 노드만 교체 (required/optional 스팬 보존) */
+  function applyLabelNode(label, fieldConfig) {
+    if (!fieldConfig) return;
+    if (fieldConfig.label) {
+      for (const node of label.childNodes) {
+        if (node.nodeType === Node.TEXT_NODE) {
+          node.textContent = fieldConfig.label + ' ';
+          break;
+        }
+      }
+    }
+    label.style.fontWeight = fieldConfig.bold   ? '700' : '';
+    label.style.fontStyle  = fieldConfig.italic ? 'italic' : '';
   }
 
   // ── 이벤트 바인딩 ────────────────────────────────────
   function bindEvents() {
-    // 폼 제출
     document.getElementById('registrationForm').addEventListener('submit', handleSubmit);
   }
 
@@ -156,34 +267,16 @@ const Survey = (() => {
   // ── 계좌번호 복사 ────────────────────────────────────
   function copyAccount() {
     const accountText = '375302-04-074200';
-    const btn = document.getElementById('copyAccountBtn');
-
-    const checkIcon = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
-    const copyIcon  = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
 
     if (navigator.clipboard) {
-      navigator.clipboard.writeText(accountText).then(() => {
-        btn.innerHTML = checkIcon;
-        btn.classList.add('copied');
-        setTimeout(() => {
-          btn.innerHTML = copyIcon;
-          btn.classList.remove('copied');
-        }, 2000);
-      });
+      navigator.clipboard.writeText(accountText);
     } else {
-      // fallback
       const el = document.createElement('textarea');
       el.value = accountText;
       document.body.appendChild(el);
       el.select();
       document.execCommand('copy');
       document.body.removeChild(el);
-      btn.innerHTML = checkIcon;
-      btn.classList.add('copied');
-      setTimeout(() => {
-        btn.innerHTML = copyIcon;
-        btn.classList.remove('copied');
-      }, 2000);
     }
   }
 
@@ -207,20 +300,8 @@ const Survey = (() => {
     return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일 (${days[date.getDay()]})`;
   }
 
-  // ── Preview 모드 ────────────────────────────────────
-  function applyPreviewConfig() {
-    try {
-      const config = JSON.parse(localStorage.getItem('preview_config') || '{}');
-      if (config.bg_color) {
-        document.body.style.background = config.bg_color;
-      }
-      if (config.bg_image) {
-        document.body.style.backgroundImage = `url(${config.bg_image})`;
-        document.body.style.backgroundSize = 'cover';
-      }
-    } catch (err) {
-      console.warn('미리보기 설정 로드 실패:', err);
-    }
+  function escHtml(str) {
+    return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
   // ── 공개 API ────────────────────────────────────────

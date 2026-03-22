@@ -1,225 +1,304 @@
 /**
  * modify.js — 신청서 수정 에디터
  *
- * 담당:
- * - form_config 시트에서 수정 가능한 문항 목록 로드 & 렌더
- * - 텍스트 스타일 (Bold / Italic / 컬러) 편집
- * - 배경 색상 / 이미지 설정
- * - localStorage에 preview_config 저장 → 미리보기 iframe 열기
- * - 저장 → api.updateFormConfig() 호출
+ * 저장 방식: API.updateConfig('form_config', JSON.stringify(config))
+ *   → GAS config 시트에 저장 → index.html(survey.js)이 로드 시 읽어서 DOM에 적용
+ *
+ * 편집 가능 항목:
+ *   - 문항 라벨: 이름/이메일/연락처/세션횟수/시간대/동의 체크박스 텍스트 + Bold/Italic
+ *   - 섹션 텍스트: 3개 섹션 각각의 제목과 설명 문구
+ *   - 시간대 옵션: 선호 시간대 체크박스 항목 추가·수정·삭제
+ *   - 배경: 그라디언트 색상 또는 이미지
  */
 
 const Modify = (() => {
-  // 수정 가능한 문항 (읽기 전용 고정값 제외)
-  const EDITABLE_FIELDS = [
-    { id: 'name',            label: '고객 이름',         type: 'text',     section: 1 },
-    { id: 'email',           label: '이메일 주소',       type: 'email',    section: 1 },
-    { id: 'contact',         label: '연락처',            type: 'text',     section: 1 },
-    { id: 'session_count',   label: '희망 세션 횟수',    type: 'number',   section: 2 },
-    { id: 'preferred_times', label: '선호 요일/시간대',  type: 'checkbox', section: 2 },
-    { id: 'agree_all',       label: '약관 동의 문구',    type: 'checkbox', section: 3 },
-  ];
 
-  // 로컬 편집 상태
-  let editorState = {};   // { field_id: { label, bold, italic } }
-  let bgState = {
-    type:   'color',       // 'color' | 'image'
-    color1: '#e8f0e9',
-    color2: '#f5efe6',
-    image:  null,          // base64 string
+  // ── 기본 설정값 ────────────────────────────────────────────────────
+  const DEFAULT_CONFIG = {
+    fields: {
+      name:            { label: '고객 이름',                   bold: false, italic: false },
+      email:           { label: '이메일 주소',                 bold: false, italic: false },
+      contact:         { label: '연락처',                     bold: false, italic: false },
+      session_count:   { label: '희망 세션 횟수',              bold: false, italic: false },
+      preferred_times: { label: '선호하는 요일 및 시간대',     bold: false, italic: false },
+      agree_all:       { label: '위 내용을 읽고 동의합니다.', bold: false, italic: false },
+    },
+    sections: {
+      '1': { title: '기본 정보',            desc: '코칭 계약의 기본 사항과 연락처를 입력해 주세요.' },
+      '2': { title: '세션 구성 & 비용 안내', desc: '한 세션당 시간은 약 50~60분 소요됩니다. 희망하시는 세션 횟수를 입력하고 비용 안내를 확인해주세요.' },
+      '3': { title: '약관 동의',            desc: '아래 내용을 읽고 하단에서 동의해 주세요.' },
+    },
+    timeslots: [
+      { value: '월~금: 오전 7~9시',  label: '월~금 · 오전 7~9시' },
+      { value: '토~일: 오전 8~10시', label: '토~일 · 오전 8~10시' },
+      { value: '토~일: 저녁 7~10시', label: '토~일 · 저녁 7~10시' },
+    ],
+    bg: { type: 'color', color1: '#e8f0e9', color2: '#f5efe6', image: null },
   };
-  let activeBgTab = 'color';
 
-  // ── 초기화 ──────────────────────────────────────────
+  let config = deepClone(DEFAULT_CONFIG);
+
+  // ── 초기화 ─────────────────────────────────────────────────────────
   async function init() {
-    // form_config에서 현재 라벨 로드
-    let serverConfig = {};
     try {
-      const configs = await API.getFormConfig();
-      configs.forEach(c => {
-        serverConfig[c.field_id] = c;
-      });
+      const serverConfig = await API.getConfig();
+      if (serverConfig && serverConfig.form_config) {
+        const parsed = JSON.parse(serverConfig.form_config);
+        config = deepMerge(DEFAULT_CONFIG, parsed);
+      }
     } catch (err) {
-      console.warn('form_config 로드 실패 (기본값 사용):', err.message);
+      console.warn('설정 로드 실패, 기본값 사용:', err.message);
     }
 
-    // 에디터 상태 초기화
-    EDITABLE_FIELDS.forEach(f => {
-      const server = serverConfig[f.id] || {};
-      let style = {};
-      try { style = JSON.parse(server.style || '{}'); } catch {}
+    // 배경 UI 초기화
+    document.getElementById('bgColor1').value = config.bg.color1 || '#e8f0e9';
+    document.getElementById('bgColor2').value = config.bg.color2 || '#f5efe6';
+    if (config.bg.type === 'image') {
+      document.querySelectorAll('.bg-tab')[1].click();
+    }
+    updateBgPreview();
 
-      editorState[f.id] = {
-        label:  server.label || f.label,
-        bold:   style.bold   || false,
-        italic: style.italic || false,
-      };
-    });
-
-    renderEditor();
+    // 모든 탭 렌더
+    renderFieldsTab();
+    renderSectionsTab();
+    renderTimeslotsTab();
   }
 
-  // ── 편집기 렌더 ─────────────────────────────────────
-  function renderEditor() {
+  // ── 탭 전환 ────────────────────────────────────────────────────────
+  function switchTab(tab, btn) {
+    document.querySelectorAll('.editor-tab').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(`tab-${tab}`).classList.add('active');
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  // 탭 1: 문항 라벨 편집
+  // ══════════════════════════════════════════════════════════════════
+
+  const FIELD_DEFS = [
+    { id: 'name',            hint: '고객 이름 입력칸 (섹션 1)',              type: 'text'     },
+    { id: 'email',           hint: '이메일 주소 입력칸 (섹션 1)',             type: 'email'    },
+    { id: 'contact',         hint: '연락처 입력칸 (섹션 1)',                 type: 'text'     },
+    { id: 'session_count',   hint: '세션 횟수 입력칸 라벨 (섹션 2)',         type: 'number'   },
+    { id: 'preferred_times', hint: '선호 시간대 체크박스 그룹 라벨 (섹션 2)', type: 'checkbox' },
+    { id: 'agree_all',       hint: '동의 체크박스 텍스트 (섹션 3)',           type: 'checkbox' },
+  ];
+
+  function renderFieldsTab() {
     const container = document.getElementById('fieldEditorList');
-
-    container.innerHTML = EDITABLE_FIELDS.map(f => {
-      const state  = editorState[f.id];
-      const boldCls   = state.bold   ? 'active' : '';
-      const italicCls = state.italic ? 'active' : '';
-
+    container.innerHTML = FIELD_DEFS.map(f => {
+      const state = config.fields[f.id] || { label: '', bold: false, italic: false };
       return `
         <div class="field-editor-row">
-          <span class="field-id-badge">${esc(f.type)}</span>
-          <input
-            class="field-label-input"
-            type="text"
-            value="${esc(state.label)}"
-            data-field="${f.id}"
-            oninput="Modify.onLabelChange('${f.id}', this.value)"
-            placeholder="${esc(f.label)}"
-          >
-          <div class="style-btns">
-            <button class="style-btn ${boldCls}"
-                    title="굵게"
-                    onclick="Modify.toggleStyle('${f.id}', 'bold', this)">
-              <strong>B</strong>
-            </button>
-            <button class="style-btn ${italicCls}"
-                    title="기울임"
-                    onclick="Modify.toggleStyle('${f.id}', 'italic', this)">
-              <em>I</em>
-            </button>
+          <div class="field-row-info">
+            <span class="field-id-badge">${esc(f.type)}</span>
+            <span class="field-name-hint">${esc(f.hint)}</span>
+          </div>
+          <div class="field-row-controls">
+            <input
+              class="field-label-input"
+              type="text"
+              value="${esc(state.label)}"
+              placeholder="라벨 텍스트 입력"
+              oninput="Modify.onFieldChange('${f.id}', 'label', this.value)"
+            >
+            <div class="style-btns">
+              <button class="style-btn ${state.bold   ? 'active' : ''}" title="굵게"   onclick="Modify.toggleFieldStyle('${f.id}', 'bold',   this)"><strong>B</strong></button>
+              <button class="style-btn ${state.italic ? 'active' : ''}" title="기울임" onclick="Modify.toggleFieldStyle('${f.id}', 'italic', this)"><em>I</em></button>
+            </div>
           </div>
         </div>
       `;
     }).join('');
   }
 
-  // ── 이벤트 핸들러 ────────────────────────────────────
-  function onLabelChange(fieldId, value) {
-    if (editorState[fieldId]) {
-      editorState[fieldId].label = value;
+  function onFieldChange(id, prop, value) {
+    if (!config.fields[id]) config.fields[id] = {};
+    config.fields[id][prop] = value;
+  }
+
+  function toggleFieldStyle(id, prop, btn) {
+    if (!config.fields[id]) config.fields[id] = {};
+    config.fields[id][prop] = !config.fields[id][prop];
+    btn.classList.toggle('active', config.fields[id][prop]);
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  // 탭 2: 섹션 제목/설명 편집
+  // ══════════════════════════════════════════════════════════════════
+
+  const SECTION_DEFS = [
+    { num: '1', label: '섹션 1 — 기본 정보' },
+    { num: '2', label: '섹션 2 — 세션 구성 & 비용' },
+    { num: '3', label: '섹션 3 — 약관 동의' },
+  ];
+
+  function renderSectionsTab() {
+    const container = document.getElementById('sectionEditorList');
+    container.innerHTML = SECTION_DEFS.map(s => {
+      const section = config.sections[s.num] || { title: '', desc: '' };
+      return `
+        <div class="section-editor-block">
+          <div class="section-editor-label">${esc(s.label)}</div>
+          <div class="section-field-row">
+            <label class="section-field-caption">제목</label>
+            <input
+              class="field-label-input"
+              type="text"
+              value="${esc(section.title)}"
+              placeholder="섹션 제목"
+              oninput="Modify.onSectionChange('${s.num}', 'title', this.value)"
+            >
+          </div>
+          <div class="section-field-row">
+            <label class="section-field-caption">설명</label>
+            <textarea
+              class="field-label-input section-desc-textarea"
+              placeholder="섹션 설명 문구"
+              oninput="Modify.onSectionChange('${s.num}', 'desc', this.value)"
+            >${esc(section.desc)}</textarea>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function onSectionChange(num, prop, value) {
+    if (!config.sections[num]) config.sections[num] = {};
+    config.sections[num][prop] = value;
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  // 탭 3: 시간대 옵션 편집
+  // ══════════════════════════════════════════════════════════════════
+
+  function renderTimeslotsTab() {
+    const container = document.getElementById('timeslotEditorList');
+    if (config.timeslots.length === 0) {
+      container.innerHTML = `<p class="empty-timeslots-msg">시간대 항목이 없습니다. 아래 버튼으로 추가하세요.</p>`;
+      return;
+    }
+    container.innerHTML = config.timeslots.map((slot, i) => `
+      <div class="timeslot-editor-row">
+        <div class="timeslot-row-num">${i + 1}</div>
+        <div class="timeslot-fields">
+          <input
+            class="field-label-input"
+            type="text"
+            value="${esc(slot.label)}"
+            placeholder="표시 라벨 (예: 월~금 · 오전 7~9시)"
+            oninput="Modify.onTimeslotChange(${i}, 'label', this.value)"
+          >
+          <input
+            class="field-label-input timeslot-value-input"
+            type="text"
+            value="${esc(slot.value)}"
+            placeholder="저장값 (예: 월~금: 오전 7~9시)"
+            oninput="Modify.onTimeslotChange(${i}, 'value', this.value)"
+          >
+        </div>
+        <button class="timeslot-delete-btn" onclick="Modify.removeTimeslot(${i})" title="삭제">✕</button>
+      </div>
+    `).join('');
+  }
+
+  function onTimeslotChange(index, prop, value) {
+    if (config.timeslots[index]) {
+      config.timeslots[index][prop] = value;
     }
   }
 
-  function toggleStyle(fieldId, prop, btn) {
-    if (!editorState[fieldId]) return;
-    editorState[fieldId][prop] = !editorState[fieldId][prop];
-    btn.classList.toggle('active', editorState[fieldId][prop]);
+  function addTimeslot() {
+    config.timeslots.push({ value: '', label: '' });
+    renderTimeslotsTab();
+    // 새로 추가된 항목의 첫 입력칸에 포커스
+    const rows = document.querySelectorAll('.timeslot-editor-row');
+    const lastRow = rows[rows.length - 1];
+    if (lastRow) lastRow.querySelector('input')?.focus();
   }
 
-  // 배경 탭 전환
+  function removeTimeslot(index) {
+    if (config.timeslots.length <= 1) {
+      showToast('⚠️ 최소 1개의 시간대 항목이 필요합니다.');
+      return;
+    }
+    config.timeslots.splice(index, 1);
+    renderTimeslotsTab();
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  // 배경 설정
+  // ══════════════════════════════════════════════════════════════════
+
   function switchBgTab(type, btn) {
-    activeBgTab = type;
+    config.bg.type = type;
     document.querySelectorAll('.bg-tab').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     document.getElementById('bgColorOption').classList.toggle('active', type === 'color');
     document.getElementById('bgImageOption').classList.toggle('active', type === 'image');
-    bgState.type = type;
   }
 
-  // 배경 색상 미리보기 업데이트
   function updateBgPreview() {
     const c1 = document.getElementById('bgColor1').value;
     const c2 = document.getElementById('bgColor2').value;
-    bgState.color1 = c1;
-    bgState.color2 = c2;
+    config.bg.color1 = c1;
+    config.bg.color2 = c2;
     const gradient = `linear-gradient(135deg, ${c1} 0%, ${c2} 100%)`;
     document.getElementById('bgPreviewColor').style.background = gradient;
     document.getElementById('bgPreviewBox').style.background   = gradient;
+    document.getElementById('bgPreviewBox').style.backgroundImage = '';
   }
 
-  // 이미지 업로드
   function handleImageUpload(input) {
     const file = input.files[0];
     if (!file) return;
-
     document.getElementById('uploadFilename').textContent = file.name;
-
     const reader = new FileReader();
     reader.onload = (e) => {
-      bgState.image = e.target.result; // base64
-      document.getElementById('bgPreviewBox').style.backgroundImage = `url(${bgState.image})`;
+      config.bg.image = e.target.result;
+      document.getElementById('bgPreviewBox').style.backgroundImage = `url(${config.bg.image})`;
       document.getElementById('bgPreviewBox').style.backgroundSize  = 'cover';
       document.getElementById('bgPreviewBox').textContent = '';
     };
     reader.readAsDataURL(file);
   }
 
-  // ── 미리보기 ────────────────────────────────────────
-  function openPreview() {
-    // 현재 편집 상태를 localStorage에 저장
-    const previewConfig = buildPreviewConfig();
-    localStorage.setItem('preview_config', JSON.stringify(previewConfig));
+  // ══════════════════════════════════════════════════════════════════
+  // 미리보기 & 저장
+  // ══════════════════════════════════════════════════════════════════
 
-    // 신청 페이지를 preview 모드로 새 탭에서 열기
+  function openPreview() {
+    localStorage.setItem('preview_config', JSON.stringify(config));
     window.open('index.html?preview=true', '_blank');
   }
 
-  function buildPreviewConfig() {
-    const config = { fields: {}, bg_type: bgState.type };
-
-    EDITABLE_FIELDS.forEach(f => {
-      const state = editorState[f.id];
-      config.fields[f.id] = {
-        label:  state.label,
-        bold:   state.bold,
-        italic: state.italic,
-      };
-    });
-
-    if (bgState.type === 'color') {
-      config.bg_color = `linear-gradient(135deg, ${bgState.color1} 0%, ${bgState.color2} 100%)`;
-    } else if (bgState.image) {
-      config.bg_image = bgState.image;
-    }
-
-    return config;
-  }
-
-  // ── 저장 ────────────────────────────────────────────
   async function save() {
     const btn = document.getElementById('saveBtn');
-    btn.disabled = true;
+    btn.disabled  = true;
     btn.textContent = '저장 중...';
 
-    // form_config 배열 구성
-    const configs = EDITABLE_FIELDS.map(f => {
-      const state = editorState[f.id];
-      return {
-        field_id:  f.id,
-        label:     state.label,
-        type:      f.type,
-        style:     { bold: state.bold, italic: state.italic },
-        bg_config: bgState,
-      };
-    });
-
     try {
-      await API.updateFormConfig(configs);
-
-      // preview_config도 최신화
-      localStorage.setItem('preview_config', JSON.stringify(buildPreviewConfig()));
-
-      showToast('✅ 저장되었습니다.');
+      await API.updateConfig('form_config', JSON.stringify(config));
+      localStorage.setItem('preview_config', JSON.stringify(config));
+      showToast('✅ 저장 완료! 신청 페이지에 즉시 반영됩니다.');
     } catch (err) {
       showToast('❌ 저장 실패: ' + err.message);
     } finally {
-      btn.disabled = false;
+      btn.disabled    = false;
       btn.textContent = '💾 저장';
     }
   }
 
-  // ── 토스트 ──────────────────────────────────────────
+  // ── 유틸 ───────────────────────────────────────────────────────────
+
   function showToast(msg) {
     const toast = document.getElementById('toast');
     toast.textContent = msg;
     toast.classList.add('show');
-    setTimeout(() => toast.classList.remove('show'), 3000);
+    setTimeout(() => toast.classList.remove('show'), 3500);
   }
 
-  // ── 유틸 ────────────────────────────────────────────
   function esc(str) {
     return (str || '').toString()
       .replace(/&/g, '&amp;')
@@ -228,7 +307,40 @@ const Modify = (() => {
       .replace(/"/g, '&quot;');
   }
 
-  return { init, onLabelChange, toggleStyle, switchBgTab, updateBgPreview, handleImageUpload, openPreview, save };
+  function deepClone(obj) {
+    return JSON.parse(JSON.stringify(obj));
+  }
+
+  /** 두 객체를 재귀적으로 병합 (배열은 source로 완전 교체) */
+  function deepMerge(target, source) {
+    const result = deepClone(target);
+    for (const key of Object.keys(source)) {
+      if (Array.isArray(source[key])) {
+        result[key] = source[key]; // 배열은 source 값으로 교체
+      } else if (source[key] && typeof source[key] === 'object') {
+        result[key] = deepMerge(result[key] || {}, source[key]);
+      } else {
+        result[key] = source[key];
+      }
+    }
+    return result;
+  }
+
+  return {
+    init,
+    switchTab,
+    onFieldChange,
+    toggleFieldStyle,
+    onSectionChange,
+    onTimeslotChange,
+    addTimeslot,
+    removeTimeslot,
+    switchBgTab,
+    updateBgPreview,
+    handleImageUpload,
+    openPreview,
+    save,
+  };
 })();
 
 document.addEventListener('DOMContentLoaded', Modify.init);

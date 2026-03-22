@@ -112,28 +112,92 @@ body {
 
 .card-body { padding: 20px; }
 
-/* ── 문항 편집기 ─────────────────────────────── */
+/* ── 카드 서브타이틀 ────────────────────────── */
+.card-subtitle {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+/* ── 에디터 탭 ──────────────────────────────── */
+.editor-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--color-border);
+  padding: 0 20px;
+  gap: 0;
+}
+
+.editor-tab {
+  padding: 12px 16px;
+  font-family: var(--font-main);
+  font-size: 13px;
+  font-weight: 600;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: all var(--transition);
+}
+.editor-tab:hover  { color: var(--color-primary); }
+.editor-tab.active { color: var(--color-primary-dark); border-bottom-color: var(--color-primary); }
+
+/* ── 탭 패널 ─────────────────────────────────── */
+.tab-panel { display: none; padding: 0 20px 20px; }
+.tab-panel.active { display: block; }
+
+.tab-panel-desc {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  padding: 12px 0 10px;
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: 12px;
+}
+
+.loading-msg {
+  color: var(--color-text-muted);
+  font-size: 13px;
+  text-align: center;
+  padding: 24px;
+}
+
+/* ── 문항 편집 행 ────────────────────────────── */
 .field-editor-row {
-  display: grid;
-  grid-template-columns: 100px 1fr auto auto;
-  align-items: center;
-  gap: 10px;
   padding: 10px 0;
   border-bottom: 1px solid var(--color-border);
 }
 .field-editor-row:last-child { border-bottom: none; }
 
+.field-row-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
 .field-id-badge {
-  font-size: 11px;
+  font-size: 10px;
   background: #f0f6f0;
   color: var(--color-primary-dark);
   border-radius: 6px;
-  padding: 3px 8px;
-  font-weight: 600;
-  text-align: center;
+  padding: 2px 7px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.field-name-hint {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.field-row-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .field-label-input {
+  flex: 1;
   padding: 8px 12px;
   border: 1.5px solid var(--color-border);
   border-radius: 8px;
@@ -141,10 +205,11 @@ body {
   font-size: 13px;
   outline: none;
   transition: border-color var(--transition);
+  width: 100%;
 }
 .field-label-input:focus { border-color: var(--color-primary); }
 
-.style-btns { display: flex; gap: 4px; }
+.style-btns { display: flex; gap: 4px; flex-shrink: 0; }
 
 .style-btn {
   width: 28px; height: 28px;
@@ -160,6 +225,129 @@ body {
   background: var(--color-primary);
   border-color: var(--color-primary);
   color: #fff;
+}
+
+/* ── 섹션 편집 ──────────────────────────────── */
+.section-editor-block {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+.section-editor-block:last-child { border-bottom: none; }
+
+.section-editor-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-primary-dark);
+  margin-bottom: 10px;
+}
+
+.section-field-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.section-field-caption {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  width: 36px;
+  flex-shrink: 0;
+  padding-top: 10px;
+}
+
+.section-desc-textarea {
+  resize: vertical;
+  min-height: 60px;
+  line-height: 1.5;
+}
+
+/* ── 시간대 편집 ─────────────────────────────── */
+.timeslot-editor-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+.timeslot-editor-row:last-child { border-bottom: none; }
+
+.timeslot-row-num {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.timeslot-fields {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.timeslot-value-input {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  background: #fafafa;
+}
+
+.timeslot-delete-btn {
+  width: 28px; height: 28px;
+  border: 1.5px solid #fca5a5;
+  border-radius: 6px;
+  background: none;
+  cursor: pointer;
+  font-size: 11px;
+  color: #ef4444;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: all var(--transition);
+}
+.timeslot-delete-btn:hover {
+  background: #ef4444;
+  border-color: #ef4444;
+  color: #fff;
+}
+
+.btn-add-timeslot {
+  margin-top: 14px;
+  width: 100%;
+  padding: 10px;
+  border: 2px dashed var(--color-primary);
+  border-radius: 8px;
+  background: none;
+  color: var(--color-primary-dark);
+  font-family: var(--font-main);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.btn-add-timeslot:hover {
+  background: #f0f6f0;
+}
+
+.empty-timeslots-msg {
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  padding: 20px 0 10px;
+}
+
+/* ── 안내 카드 ──────────────────────────────── */
+.guide-list {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  line-height: 2;
 }
 
 /* ── 배경 설정 ───────────────────────────────── */
