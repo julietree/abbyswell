@@ -427,15 +427,22 @@ const Admin = (() => {
     if (!raw) return '';
     const trimmed = raw.trim();
 
-    // 전화번호 패턴 추출: 0으로 시작하는 10~11자리 숫자(하이픈 포함)
-    const phoneMatch = trimmed.match(/0\d[\d\-]{8,12}/);
-    if (!phoneMatch) return trimmed; // 전화번호 없으면 원본 반환
+    // 전화번호 패턴 추출 (0 제거된 형태 포함: 10xxxxxxxx)
+    const phoneMatch = trimmed.match(/\d[\d\-]{8,12}/);
+    if (!phoneMatch) return trimmed;
 
-    const digits = phoneMatch[0].replace(/\D/g, '');
+    let digits = phoneMatch[0].replace(/\D/g, '');
+
+    // 구글 시트가 앞의 0을 제거한 경우 복원
+    // 10자리이고 "10"으로 시작 → 앞에 0 붙여서 "010..."으로 복원
+    if (digits.length === 10 && digits.startsWith('10')) {
+      digits = '0' + digits;
+    }
+
     let phone = '';
     if (digits.length === 11) phone = `${digits.substring(0,3)}-${digits.substring(3,7)}-${digits.substring(7)}`;
     else if (digits.length === 10) phone = `${digits.substring(0,3)}-${digits.substring(3,6)}-${digits.substring(6)}`;
-    else phone = phoneMatch[0]; // 그 외 길이는 그대로
+    else phone = digits;
 
     // 전화번호 제거 후 남은 텍스트 = 카카오 아이디
     const kakao = trimmed
