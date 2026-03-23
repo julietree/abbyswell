@@ -96,19 +96,77 @@ function doGet(e) {
 }
 
 function handleGetRegistrations() {
-  const sheet    = getSheet('registrations');
-  const expected = ['id','name','email','contact','start_date','end_date','session_type','session_count','topic','online_link','contract_url','contract_status','created_at'];
-  const values   = sheet.getDataRange().getValues();
+  const sheet  = getSheet('registrations');
+  const values = sheet.getDataRange().getValues();
+
+  if (!values || values.length < 1) return [];
 
   // 헤더 행 자동 수정: 첫 번째 행이 헤더가 아닌 경우 삽입
-  if (values.length > 0 && values[0][0] !== 'id') {
+  if (values[0][0] !== 'id') {
+    const expected = ['id','name','email','contact','start_date','end_date','session_type','session_count','topic','online_link','preferred_times','contract_url','contract_status','created_at'];
     sheet.insertRowBefore(1);
     sheet.getRange(1, 1, 1, expected.length).setValues([expected]);
     const fixed = sheet.getDataRange().getValues();
-    return parseSheetToObjects(fixed);
+    return parseRegistrations(fixed);
   }
 
-  return parseSheetToObjects(values);
+  return parseRegistrations(values);
+}
+
+/** 등록 데이터 전용 파서: preferred_times 헤더 누락 자동 보정 */
+function parseRegistrations(values) {
+  if (!values || values.length < 2) return [];
+  var rawHeader = values[0].map(function(h) { return String(h).trim(); });
+
+  // 헤더에 preferred_times가 이미 있으면 그대로 파싱
+  if (rawHeader.includes('preferred_times')) {
+    return values.slice(1).map(function(row) {
+      return rawHeader.reduce(function(obj, h, i) {
+        if (!h) return obj;
+        var val = row[i];
+        obj[h] = (val instanceof Date) ? val.toISOString() : (val !== undefined ? String(val) : '');
+        return obj;
+      }, {});
+    });
+  }
+
+  // preferred_times가 헤더에 없는 경우:
+  // 데이터는 online_link 다음에 preferred_times가 들어가 있어서
+  // 헤더 인덱스와 데이터 인덱스가 1씩 어긋남.
+  // 단, 빈 헤더('') 이후의 컬럼(first_session 등 나중에 추가된 것)은 어긋남 없음.
+  var olIdx = rawHeader.indexOf('online_link');
+  if (olIdx === -1) olIdx = 9; // 기본값
+
+  var firstEmptyIdx = rawHeader.indexOf(''); // 빈 헤더 위치(N열 등)
+
+  return values.slice(1).map(function(row) {
+    var obj = {};
+
+    // preferred_times: 데이터에서 online_link 바로 다음 위치
+    var ptVal = row[olIdx + 1];
+    obj['preferred_times'] = (ptVal instanceof Date) ? ptVal.toISOString() : (ptVal !== undefined ? String(ptVal) : '');
+
+    rawHeader.forEach(function(h, i) {
+      if (!h) return; // 빈 헤더 스킵
+
+      var dataIdx;
+      if (firstEmptyIdx !== -1 && i >= firstEmptyIdx) {
+        // 빈 헤더 이후(나중에 추가된 컬럼): 인덱스 그대로
+        dataIdx = i;
+      } else if (i <= olIdx) {
+        // online_link까지: 인덱스 그대로
+        dataIdx = i;
+      } else {
+        // online_link 이후 원래 헤더 컬럼: +1 (preferred_times가 데이터에 끼어 있으므로)
+        dataIdx = i + 1;
+      }
+
+      var val = row[dataIdx];
+      obj[h] = (val instanceof Date) ? val.toISOString() : (val !== undefined ? String(val) : '');
+    });
+
+    return obj;
+  });
 }
 
 function handleGetFormConfig() {
@@ -133,7 +191,13 @@ function parseSheetToObjects(values) {
   const headers = values[0];
   return values.slice(1).map(row =>
     headers.reduce((obj, header, i) => {
-      obj[header] = row[i] !== undefined ? String(row[i]) : '';
+      const val = row[i];
+      // 구글 시트가 날짜를 Date 객체로 자동변환하는 경우 ISO 문자열로 복원
+      if (val instanceof Date) {
+        obj[header] = val.toISOString();
+      } else {
+        obj[header] = val !== undefined ? String(val) : '';
+      }
       return obj;
     }, {})
   );
