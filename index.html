@@ -80,7 +80,8 @@
       <!-- 연락처 -->
       <div class="field-group">
         <label class="field-label" for="contact" data-field="contact">연락처 <span class="required">*</span></label>
-        <input type="text" id="contact" class="form-input" placeholder="카카오톡 ID 또는 전화번호" autocomplete="tel">
+        <input type="tel" id="contact" class="form-input" placeholder="010-0000-0000" autocomplete="tel" maxlength="13"
+          oninput="(function(el){var d=el.value.replace(/\D/g,'');if(d.length<=3)el.value=d;else if(d.length<=7)el.value=d.substring(0,3)+'-'+d.substring(3);else el.value=d.substring(0,3)+'-'+d.substring(3,7)+'-'+d.substring(7,11);})(this)">
         <p class="field-error" id="error-contact">연락처를 입력해 주세요.</p>
       </div>
 

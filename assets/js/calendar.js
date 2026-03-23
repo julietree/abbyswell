@@ -174,45 +174,65 @@ const Calendar = (() => {
     for (let d = 1; d <= daysInMonth; d++) {
       const dateStr = formatDateISO(new Date(year, month, d));
       const isToday = (year === today.getFullYear() && month === today.getMonth() && d === today.getDate());
-      const events  = eventMap[dateStr] || [];
+      // 등록 이벤트 + 수동 이벤트 합쳐서 시간순 정렬
+      const regEvents = eventMap[dateStr] || [];
+      const dayManual = manualEvents.filter(me => me.dateStr === dateStr).map(me => ({
+        label:    `${me.name}${me.time ? ' / ' + me.time : ''} / ${me.sessionNum}차수`,
+        raw:      null,
+        time:     me.time || '00:00',
+        isManual: true,
+        manualEv: me,
+      }));
+      const allEvents = [...regEvents, ...dayManual].sort((a, b) => a.time.localeCompare(b.time));
 
       const cell = createCell(d, false, isToday, dateStr);
 
-      events.forEach(ev => {
+      allEvents.forEach(ev => {
         const chip = document.createElement('div');
-        chip.className = 'event-chip';
-        chip.textContent = ev.label;
-        chip.title = ev.label;
-        chip.addEventListener('click', (e) => {
-          e.stopPropagation();
-          if (ev.raw && typeof Admin !== 'undefined') Admin.openModal(ev.raw);
-        });
-        cell.appendChild(chip);
-      });
 
-      // 수동 이벤트 칩
-      manualEvents.filter(me => me.dateStr === dateStr).forEach(me => {
-        const chip = document.createElement('div');
-        chip.className = 'event-chip manual-chip';
-        const timeLabel = me.time ? ` / ${me.time}` : '';
-        chip.textContent = `${me.name}${timeLabel} / ${me.sessionNum}차수`;
-        chip.title = `클릭: 수정`;
-        chip.style.cursor = 'pointer';
-        chip.addEventListener('click', (e) => {
-          e.stopPropagation();
-          showEditEventDialog(me);
-        });
-        const delBtn = document.createElement('span');
-        delBtn.textContent = ' 🗑';
-        delBtn.title = '삭제';
-        delBtn.style.cssText = 'cursor:pointer;margin-left:4px;font-size:11px;opacity:0.7;';
-        delBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          if (confirm(`"${me.name}" 일정을 삭제하시겠습니까?`)) {
-            deleteManualEvent(me.id);
+        if (ev.isManual) {
+          // 수동 이벤트: 수정 클릭 + 삭제 버튼
+          chip.className = 'event-chip manual-chip';
+          chip.textContent = ev.label;
+          chip.title = '클릭: 수정';
+          chip.style.cursor = 'pointer';
+          chip.addEventListener('click', (e) => {
+            e.stopPropagation();
+            showEditEventDialog(ev.manualEv);
+          });
+          const delBtn = document.createElement('span');
+          delBtn.textContent = ' 🗑';
+          delBtn.title = '삭제';
+          delBtn.style.cssText = 'cursor:pointer;margin-left:4px;font-size:11px;opacity:0.7;';
+          delBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (confirm(`"${ev.manualEv.name}" 일정을 삭제하시겠습니까?`)) {
+              deleteManualEvent(ev.manualEv.id);
+            }
+          });
+          chip.appendChild(delBtn);
+        } else {
+          // 등록 이벤트: 클릭 시 상세 모달 + ✕ 삭제 버튼
+          chip.className = 'event-chip';
+          chip.textContent = ev.label;
+          chip.title = ev.label;
+          chip.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (ev.raw && typeof Admin !== 'undefined') Admin.openModal(ev.raw);
+          });
+          if (ev.raw && ev.raw.id) {
+            const delBtn = document.createElement('span');
+            delBtn.textContent = ' ✕';
+            delBtn.title = '첫차수 삭제';
+            delBtn.style.cssText = 'cursor:pointer;margin-left:4px;font-size:11px;opacity:0.7;font-weight:700;';
+            delBtn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              if (typeof Admin !== 'undefined') Admin.clearFirstSession(ev.raw.id);
+            });
+            chip.appendChild(delBtn);
           }
-        });
-        chip.appendChild(delBtn);
+        }
+
         cell.appendChild(chip);
       });
 
@@ -254,11 +274,12 @@ const Calendar = (() => {
         const key     = fullVal.substring(0, 10);
         const timeStr = fullVal.length > 12 ? fullVal.substring(11, 16) : '';
         if (!map[key]) map[key] = [];
-        // 등록 테이블에서 입력한 첫 세션은 항상 "1차수"
         const timeLabel = timeStr ? ` / ${timeStr}` : '';
         map[key].push({
-          label: `${reg.name}${timeLabel} / 1차수`,
-          raw:   reg,
+          label:    `${reg.name}${timeLabel} / 1차수`,
+          raw:      reg,
+          time:     timeStr || '00:00',
+          isManual: false,
         });
       }
     });

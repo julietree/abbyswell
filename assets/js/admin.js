@@ -264,7 +264,7 @@ const Admin = (() => {
           <td onclick="Admin.openModal(${escAttr(JSON.stringify(r))})" style="cursor:pointer">${esc(r.name)}</td>
           <td>${esc(formatDate(r.created_at))}</td>
           <td>${esc(r.session_count)}회</td>
-          <td>${esc(r.contact)}</td>
+          <td>${esc(formatContact(r.contact))}</td>
           <td>${esc(r.email)}</td>
           <td onclick="event.stopPropagation()">
             <button class="btn-dl-sm" onclick="Admin.downloadContract(${escAttr(JSON.stringify(r))})">📄 다운로드</button>
@@ -379,6 +379,32 @@ const Admin = (() => {
     XLSX.writeFile(wb, `코칭등록현황_${new Date().toISOString().substring(0, 10)}.xlsx`);
   }
 
+  // ── 첫차수 캘린더 삭제 ───────────────────────────────
+  function clearFirstSession(regId) {
+    const reg = allData.find(r => r.id === regId);
+    if (!reg) return;
+    if (!confirm(`"${reg.name}"의 첫차수 일정을 캘린더에서 삭제하시겠습니까?\n(등록 데이터는 유지됩니다.)`)) return;
+
+    reg.first_session = '';
+
+    // localStorage 캐시에서 제거
+    const key = reg.id || reg.created_at || reg.email || reg.name;
+    if (key) {
+      const cache = getFsCache();
+      delete cache[key];
+      localStorage.setItem('admin_fs', JSON.stringify(cache));
+    }
+
+    // GAS에 빈 값으로 업데이트 (행 삭제 아님)
+    if (reg.id) {
+      API.updateFirstSession(reg.id, '').catch(err => console.error('첫차수 초기화 실패:', err));
+    }
+
+    Calendar.update(allData);
+    renderTable();
+    showSaveToast('🗑 첫차수 일정 삭제됨');
+  }
+
   // ── 유틸 ────────────────────────────────────────────
   function esc(str) {
     return (str || '').toString()
@@ -389,15 +415,24 @@ const Admin = (() => {
     return str.replace(/'/g, '&apos;').replace(/"/g, '&quot;');
   }
   function formatDate(iso) {
-    if (!iso) return '';
+    if (!iso) return '-';
     try {
       const d = new Date(iso);
-      return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+      if (isNaN(d)) return iso;
+      return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
     } catch { return iso; }
   }
 
+  function formatContact(raw) {
+    if (!raw) return '';
+    const d = raw.replace(/\D/g, '');
+    if (d.length === 11) return `${d.substring(0,3)}-${d.substring(3,7)}-${d.substring(7)}`;
+    if (d.length === 10) return `${d.substring(0,3)}-${d.substring(3,6)}-${d.substring(6)}`;
+    return raw;
+  }
+
   return { init, loadData, filterTable, sortTable, openModal, closeModal,
-           exportExcel, downloadContract, deleteSelected, updateFirstSession, toggleSelectAll };
+           exportExcel, downloadContract, deleteSelected, updateFirstSession, toggleSelectAll, clearFirstSession };
 })();
 
 document.addEventListener('DOMContentLoaded', Admin.init);
