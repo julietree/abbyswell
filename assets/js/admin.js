@@ -425,10 +425,26 @@ const Admin = (() => {
 
   function formatContact(raw) {
     if (!raw) return '';
-    const d = raw.replace(/\D/g, '');
-    if (d.length === 11) return `${d.substring(0,3)}-${d.substring(3,7)}-${d.substring(7)}`;
-    if (d.length === 10) return `${d.substring(0,3)}-${d.substring(3,6)}-${d.substring(6)}`;
-    return raw;
+    const trimmed = raw.trim();
+
+    // 전화번호 패턴 추출: 0으로 시작하는 10~11자리 숫자(하이픈 포함)
+    const phoneMatch = trimmed.match(/0\d[\d\-]{8,12}/);
+    if (!phoneMatch) return trimmed; // 전화번호 없으면 원본 반환
+
+    const digits = phoneMatch[0].replace(/\D/g, '');
+    let phone = '';
+    if (digits.length === 11) phone = `${digits.substring(0,3)}-${digits.substring(3,7)}-${digits.substring(7)}`;
+    else if (digits.length === 10) phone = `${digits.substring(0,3)}-${digits.substring(3,6)}-${digits.substring(6)}`;
+    else phone = phoneMatch[0]; // 그 외 길이는 그대로
+
+    // 전화번호 제거 후 남은 텍스트 = 카카오 아이디
+    const kakao = trimmed
+      .replace(phoneMatch[0], '')
+      .replace(/^[\s,\/\|\(\)]+|[\s,\/\|\(\)]+$/g, '')
+      .trim();
+
+    if (kakao) return `${phone} (카카오: ${kakao})`;
+    return phone;
   }
 
   return { init, loadData, filterTable, sortTable, openModal, closeModal,
