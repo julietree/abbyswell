@@ -94,6 +94,75 @@ const Calendar = (() => {
     });
   }
 
+  // ── 칩 클릭 팝업 메뉴 ───────────────────────────────
+  function showChipMenu(e, ev) {
+    const existing = document.getElementById('chipContextMenu');
+    if (existing) existing.remove();
+
+    const menu = document.createElement('div');
+    menu.id = 'chipContextMenu';
+    const x = Math.min(e.clientX, window.innerWidth - 150);
+    const y = e.clientY + 8;
+    menu.style.cssText = `position:fixed;left:${x}px;top:${y}px;background:#fff;border:1px solid #e5e7eb;border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,0.15);padding:4px;z-index:3000;min-width:120px;`;
+
+    const btnBase = 'display:block;width:100%;padding:7px 14px;border:none;background:none;cursor:pointer;text-align:left;font-size:13px;border-radius:6px;';
+
+    if (ev.isManual) {
+      const editBtn = document.createElement('button');
+      editBtn.textContent = '✏️ 수정';
+      editBtn.style.cssText = btnBase;
+      editBtn.onmouseenter = () => { editBtn.style.background = '#f3f4f6'; };
+      editBtn.onmouseleave = () => { editBtn.style.background = 'none'; };
+      editBtn.addEventListener('click', (e2) => {
+        e2.stopPropagation(); menu.remove();
+        showEditEventDialog(ev.manualEv);
+      });
+
+      const delBtn = document.createElement('button');
+      delBtn.textContent = '🗑 삭제';
+      delBtn.style.cssText = btnBase + 'color:#ef4444;';
+      delBtn.onmouseenter = () => { delBtn.style.background = '#fef2f2'; };
+      delBtn.onmouseleave = () => { delBtn.style.background = 'none'; };
+      delBtn.addEventListener('click', (e2) => {
+        e2.stopPropagation(); menu.remove();
+        if (confirm(`"${ev.manualEv.name}" 일정을 삭제하시겠습니까?`)) {
+          deleteManualEvent(ev.manualEv.id);
+        }
+      });
+
+      menu.appendChild(editBtn);
+      menu.appendChild(delBtn);
+    } else {
+      const detailBtn = document.createElement('button');
+      detailBtn.textContent = '👤 상세 보기';
+      detailBtn.style.cssText = btnBase;
+      detailBtn.onmouseenter = () => { detailBtn.style.background = '#f3f4f6'; };
+      detailBtn.onmouseleave = () => { detailBtn.style.background = 'none'; };
+      detailBtn.addEventListener('click', (e2) => {
+        e2.stopPropagation(); menu.remove();
+        if (ev.raw && typeof Admin !== 'undefined') Admin.openModal(ev.raw);
+      });
+
+      const delBtn = document.createElement('button');
+      delBtn.textContent = '🗑 삭제';
+      delBtn.style.cssText = btnBase + 'color:#ef4444;';
+      delBtn.onmouseenter = () => { delBtn.style.background = '#fef2f2'; };
+      delBtn.onmouseleave = () => { delBtn.style.background = 'none'; };
+      delBtn.addEventListener('click', (e2) => {
+        e2.stopPropagation(); menu.remove();
+        if (typeof Admin !== 'undefined') Admin.clearFirstSession(ev.raw.id);
+      });
+
+      menu.appendChild(detailBtn);
+      menu.appendChild(delBtn);
+    }
+
+    document.body.appendChild(menu);
+    setTimeout(() => {
+      document.addEventListener('click', () => { const m = document.getElementById('chipContextMenu'); if (m) m.remove(); }, { once: true });
+    }, 10);
+  }
+
   // ── 이벤트 추가 다이얼로그 ──────────────────────────
   function showAddEventDialog(dateStr) {
     showEventDialog({
@@ -189,50 +258,14 @@ const Calendar = (() => {
 
       allEvents.forEach(ev => {
         const chip = document.createElement('div');
-
-        if (ev.isManual) {
-          // 수동 이벤트: 수정 클릭 + 삭제 버튼
-          chip.className = 'event-chip manual-chip';
-          chip.textContent = ev.label;
-          chip.title = '클릭: 수정';
-          chip.style.cursor = 'pointer';
-          chip.addEventListener('click', (e) => {
-            e.stopPropagation();
-            showEditEventDialog(ev.manualEv);
-          });
-          const delBtn = document.createElement('span');
-          delBtn.textContent = ' 🗑';
-          delBtn.title = '삭제';
-          delBtn.style.cssText = 'cursor:pointer;margin-left:4px;font-size:11px;opacity:0.7;';
-          delBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            if (confirm(`"${ev.manualEv.name}" 일정을 삭제하시겠습니까?`)) {
-              deleteManualEvent(ev.manualEv.id);
-            }
-          });
-          chip.appendChild(delBtn);
-        } else {
-          // 등록 이벤트: 클릭 시 상세 모달 + ✕ 삭제 버튼
-          chip.className = 'event-chip';
-          chip.textContent = ev.label;
-          chip.title = ev.label;
-          chip.addEventListener('click', (e) => {
-            e.stopPropagation();
-            if (ev.raw && typeof Admin !== 'undefined') Admin.openModal(ev.raw);
-          });
-          if (ev.raw && ev.raw.id) {
-            const delBtn = document.createElement('span');
-            delBtn.textContent = ' ✕';
-            delBtn.title = '첫차수 삭제';
-            delBtn.style.cssText = 'cursor:pointer;margin-left:4px;font-size:11px;opacity:0.7;font-weight:700;';
-            delBtn.addEventListener('click', (e) => {
-              e.stopPropagation();
-              if (typeof Admin !== 'undefined') Admin.clearFirstSession(ev.raw.id);
-            });
-            chip.appendChild(delBtn);
-          }
-        }
-
+        chip.className = ev.isManual ? 'event-chip manual-chip' : 'event-chip';
+        chip.textContent = ev.label;
+        chip.title = '클릭하면 메뉴가 나타납니다';
+        chip.style.cursor = 'pointer';
+        chip.addEventListener('click', (e) => {
+          e.stopPropagation();
+          showChipMenu(e, ev);
+        });
         cell.appendChild(chip);
       });
 
