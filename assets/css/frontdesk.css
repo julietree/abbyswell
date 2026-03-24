@@ -979,6 +979,14 @@ details[open] .terms-summary::after {
 
 /* ── 반응형 ─────────────────────────────────── */
 @media (max-width: 640px) {
+  /* iOS 자동 확대 방지: font-size 16px 미만이면 포커스 시 zoom 발생 */
+  .form-input,
+  .form-select,
+  .form-textarea {
+    font-size: 16px !important;
+    touch-action: manipulation;
+  }
+
   .section-card {
     padding: 24px 20px;
   }
