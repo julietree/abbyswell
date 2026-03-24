@@ -11,6 +11,18 @@
  *     라벨 텍스트, 섹션 제목/설명, 시간대 옵션, 배경색 등을 실시간 반영
  */
 
+/** UUID 생성 (crypto.randomUUID 미지원 구형 WebView 대응) */
+function generateUUID() {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    var r = Math.random() * 16 | 0;
+    var v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
 const Survey = (() => {
   // ── 상태 ────────────────────────────────────────────
   let currentSection   = 1;
@@ -61,7 +73,7 @@ const Survey = (() => {
         }
       });
       // 동의 체크박스 라벨 (for="agree_all")
-      if (config.fields.agree_all?.label) {
+      if (config.fields.agree_all && config.fields.agree_all.label) {
         const el = document.querySelector('label[for="agree_all"]');
         if (el) {
           el.textContent = config.fields.agree_all.label;
@@ -275,7 +287,7 @@ const Survey = (() => {
     ).map(cb => cb.value).join(', ');
 
     return {
-      id:                 crypto.randomUUID(),
+      id:                 generateUUID(),
       name:               getVal('name').trim(),
       email:              getVal('email').trim(),
       contact:            normalizeContact(getVal('contact')),
