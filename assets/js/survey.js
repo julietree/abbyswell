@@ -246,6 +246,28 @@ const Survey = (() => {
     }
   }
 
+  /** 전화번호를 010-XXXX-XXXX 형식으로 정제 */
+  function normalizeContact(raw) {
+    const trimmed = (raw || '').trim();
+    // 전화번호 부분 추출 (숫자·하이픈으로 이루어진 연속 문자열)
+    const phoneMatch = trimmed.match(/\d[\d\-]{8,12}/);
+    if (!phoneMatch) return trimmed;
+
+    let digits = phoneMatch[0].replace(/\D/g, '');
+    // 국가번호 82 제거
+    if (digits.startsWith('82') && digits.length >= 11) digits = '0' + digits.substring(2);
+    // 앞의 0 복원 (구글 시트 자동 제거 방어)
+    if (digits.length === 10 && digits.startsWith('10')) digits = '0' + digits;
+
+    let phone = digits;
+    if (digits.length === 11) phone = `${digits.substring(0,3)}-${digits.substring(3,7)}-${digits.substring(7)}`;
+    else if (digits.length === 10) phone = `${digits.substring(0,3)}-${digits.substring(3,6)}-${digits.substring(6)}`;
+
+    // 카카오 아이디가 있으면 뒤에 붙임
+    const kakao = trimmed.replace(phoneMatch[0], '').replace(/^[\s,\/\|\(\)]+|[\s,\/\|\(\)]+$/g, '').trim();
+    return kakao ? `${phone} (카카오: ${kakao})` : phone;
+  }
+
   function collectFormData() {
     const today = new Date();
     const preferredTimes = Array.from(
@@ -256,7 +278,7 @@ const Survey = (() => {
       id:                 crypto.randomUUID(),
       name:               getVal('name').trim(),
       email:              getVal('email').trim(),
-      contact:            getVal('contact').trim(),
+      contact:            normalizeContact(getVal('contact')),
       start_date:         formatDateISO(today),
       end_date:           '',
       session_type:       '',
