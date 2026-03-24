@@ -309,7 +309,7 @@ const Calendar = (() => {
         if (!map[key]) map[key] = [];
         const timeLabel = timeStr ? ` / ${timeStr}` : '';
         map[key].push({
-          label:    `${reg.name}${timeLabel} / 1차수`,
+          label:    `${(reg.name||'').replace(/[^가-힣a-zA-Z\s]/g,'').trim()}${timeLabel} / 1차수`,
           raw:      reg,
           time:     timeStr || '00:00',
           isManual: false,
