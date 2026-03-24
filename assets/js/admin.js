@@ -433,6 +433,11 @@ const Admin = (() => {
 
     let digits = phoneMatch[0].replace(/\D/g, '');
 
+    // 국가번호 82 제거: 82-10-xxxx-xxxx → 010-xxxx-xxxx
+    if (digits.startsWith('82') && digits.length >= 11) {
+      digits = '0' + digits.substring(2);
+    }
+
     // 구글 시트가 앞의 0을 제거한 경우 복원
     // 10자리이고 "10"으로 시작 → 앞에 0 붙여서 "010..."으로 복원
     if (digits.length === 10 && digits.startsWith('10')) {
