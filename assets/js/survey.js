@@ -172,7 +172,13 @@ const Survey = (() => {
     let valid = true;
 
     if (section === 1) {
-      if (!getVal('name').trim())  { showError('name');    valid = false; }
+      const nameVal = getVal('name').trim();
+      if (!nameVal) { showError('name'); valid = false; }
+      else if (/[^가-힣a-zA-Z\s]/.test(nameVal)) {
+        showError('name');
+        document.getElementById('error-name').textContent = '이름은 한글/영문만 입력 가능합니다.';
+        valid = false;
+      }
       const email = getVal('email').trim();
       if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         showError('email'); valid = false;

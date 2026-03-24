@@ -261,7 +261,7 @@ const Admin = (() => {
           <td onclick="event.stopPropagation()">
             <input type="checkbox" class="row-checkbox" data-idx="${idx}">
           </td>
-          <td onclick="Admin.openModal(${escAttr(JSON.stringify(r))})" style="cursor:pointer">${esc(r.name)}</td>
+          <td onclick="Admin.openModal(${escAttr(JSON.stringify(r))})" style="cursor:pointer">${esc(formatName(r.name))}</td>
           <td>${esc(formatDate(r.created_at))}</td>
           <td>${esc(r.session_count)}회</td>
           <td>${esc(formatContact(r.contact))}</td>
@@ -421,6 +421,12 @@ const Admin = (() => {
       if (isNaN(d)) return iso;
       return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
     } catch { return iso; }
+  }
+
+  // 이름에서 한글/영문/공백 외 문자(숫자·특수기호) 제거
+  function formatName(raw) {
+    if (!raw) return '';
+    return raw.replace(/[^가-힣a-zA-Z\s]/g, '').trim();
   }
 
   function formatContact(raw) {
