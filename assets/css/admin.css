@@ -714,3 +714,41 @@ tbody td {
   color: #555;
 }
 
+
+
+/* ── 신청 페이지 팝업 모달 ── */
+.app-page-modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+}
+.app-page-modal-overlay.open { display: flex; }
+.app-page-modal-inner {
+  display: flex;
+  flex-direction: column;
+  width: min(860px, 95vw);
+  height: 90vh;
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.25);
+}
+.app-page-modal-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
+  flex-shrink: 0;
+}
+.app-page-modal-title { font-size: 14px; font-weight: 600; color: #374151; }
+
+/* ── 자동 세션 칩 & 드래그 앤 드롭 ── */
+.auto-chip { background: #bfdbfe !important; color: #1e40af !important; }
+.dragging { opacity: 0.4; }
+.drag-over { background: #e8f5e9 !important; outline: 2px dashed #7a9e7e; }

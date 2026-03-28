@@ -22,7 +22,7 @@
   <nav class="sidebar-nav">
     <a class="nav-item" href="admin.html"><span>📊</span><span>대시보드</span></a>
     <a class="nav-item active" href="modify.html"><span>✏️</span><span>신청서 수정</span></a>
-    <a class="nav-item" href="index.html" target="_blank"><span>📋</span><span>신청 페이지</span></a>
+    <a class="nav-item" href="#" onclick="openAppPageModal();return false;"><span>📋</span><span>신청 페이지</span></a>
   </nav>
   <div class="sidebar-footer">v1.0 · 이 연 임 코치</div>
 </aside>
@@ -40,45 +40,17 @@
 
   <div class="modify-body">
 
-    <!-- 왼쪽: 탭 기반 에디터 -->
+    <!-- 왼쪽: WYSIWYG 에디터 -->
     <div>
       <div class="card">
         <div class="card-header">
           <span class="card-title">📝 신청서 편집</span>
           <span class="card-subtitle">저장 즉시 신청 페이지에 반영됩니다</span>
         </div>
-
-        <!-- 탭 -->
-        <div class="editor-tabs">
-          <button class="editor-tab active"  data-tab="fields"    onclick="Modify.switchTab('fields',    this)">🏷 문항 라벨</button>
-          <button class="editor-tab"         data-tab="sections"  onclick="Modify.switchTab('sections',  this)">📋 섹션 텍스트</button>
-          <button class="editor-tab"         data-tab="timeslots" onclick="Modify.switchTab('timeslots', this)">🕐 시간대 옵션</button>
+        <div id="wysiwygEditor">
+          <p class="loading-msg">불러오는 중...</p>
         </div>
-
-        <!-- 탭 1: 문항 라벨 -->
-        <div class="tab-panel active" id="tab-fields">
-          <div class="tab-panel-desc">각 입력 항목의 라벨(표시 이름)과 스타일을 수정합니다.</div>
-          <div id="fieldEditorList">
-            <p class="loading-msg">불러오는 중...</p>
-          </div>
-        </div>
-
-        <!-- 탭 2: 섹션 텍스트 -->
-        <div class="tab-panel" id="tab-sections">
-          <div class="tab-panel-desc">각 섹션의 제목과 설명 문구를 수정합니다.</div>
-          <div id="sectionEditorList">
-            <p class="loading-msg">불러오는 중...</p>
-          </div>
-        </div>
-
-        <!-- 탭 3: 시간대 옵션 -->
-        <div class="tab-panel" id="tab-timeslots">
-          <div class="tab-panel-desc">선호 시간대 체크박스 항목을 추가·수정·삭제합니다.</div>
-          <div id="timeslotEditorList"></div>
-          <button class="btn-add-timeslot" onclick="Modify.addTimeslot()">＋ 시간대 추가</button>
-        </div>
-
-      </div><!-- /.card -->
+      </div>
     </div>
 
     <!-- 오른쪽: 배경 설정 + 안내 -->
@@ -128,9 +100,9 @@
       <div class="card">
         <div class="card-header"><span class="card-title">ℹ️ 수정 안내</span></div>
         <div class="card-body guide-list">
-          <p>• <strong>문항 라벨</strong> — 각 입력칸 제목 텍스트 및 굵기/기울임 변경</p>
-          <p>• <strong>섹션 텍스트</strong> — 3개 섹션의 큰 제목과 설명 문구 변경</p>
-          <p>• <strong>시간대 옵션</strong> — 선호 시간대 체크박스 항목 추가·수정·삭제</p>
+          <p>• <strong>텍스트 클릭</strong> — 해당 항목을 바로 수정합니다</p>
+          <p>• <strong>시간대 ✕</strong> — 해당 시간대 항목을 삭제합니다</p>
+          <p>• <strong>＋ 시간대 추가</strong> — 새 선택지를 추가합니다</p>
           <p>• <strong>배경 설정</strong> — 그라디언트 색상 또는 이미지 배경 변경</p>
           <p style="margin-top:10px;">💾 <strong>저장</strong> 후 신청 페이지를 열면 즉시 반영됩니다.</p>
           <p>👁 <strong>미리보기</strong>로 저장 전에 먼저 확인할 수 있습니다.</p>
@@ -145,9 +117,51 @@
 <!-- 토스트 알림 -->
 <div class="toast" id="toast"></div>
 
+<!-- Fix 3b: 미리보기 모달 -->
+<div class="preview-modal-overlay" id="previewModal" onclick="Modify.closePreview(event)">
+  <div class="preview-modal-inner">
+    <div class="preview-modal-toolbar">
+      <span class="preview-modal-title">👁 미리보기</span>
+      <div style="display:flex;gap:8px;">
+        <a class="btn btn-outline" href="index.html?preview=true" target="_blank" style="font-size:12px;padding:4px 10px;">새 탭으로 열기</a>
+        <button onclick="document.getElementById('previewModal').classList.remove('open')" style="padding:4px 10px;border:none;background:none;font-size:20px;cursor:pointer;line-height:1;">×</button>
+      </div>
+    </div>
+    <iframe id="previewIframe" src="" frameborder="0" style="width:100%;flex:1;border:none;"></iframe>
+  </div>
+</div>
+
+<!-- 신청 페이지 팝업 모달 -->
+<div class="app-page-modal-overlay" id="appPageModal" onclick="closeAppPageModal(event)">
+  <div class="app-page-modal-inner">
+    <div class="app-page-modal-toolbar">
+      <span class="app-page-modal-title">📋 신청 페이지</span>
+      <div style="display:flex;gap:8px;">
+        <a class="btn btn-outline" href="index.html" target="_blank" style="font-size:12px;padding:4px 10px;">새 탭으로 열기</a>
+        <button class="modal-close" onclick="closeAppPageModal()" style="position:static;font-size:20px;line-height:1;">×</button>
+      </div>
+    </div>
+    <iframe id="appPageIframe" src="" frameborder="0" style="width:100%;flex:1;border:none;"></iframe>
+  </div>
+</div>
+
 <script src="config.js"></script>
 <script src="assets/js/api.js"></script>
 <script src="assets/js/modify.js"></script>
+<script>
+  function openAppPageModal() {
+    const modal = document.getElementById('appPageModal');
+    const iframe = document.getElementById('appPageIframe');
+    if (!iframe.src || iframe.src === window.location.href) {
+      iframe.src = 'index.html';
+    }
+    modal.classList.add('open');
+  }
+  function closeAppPageModal(e) {
+    if (e && e.target !== document.getElementById('appPageModal')) return;
+    document.getElementById('appPageModal').classList.remove('open');
+  }
+</script>
 
 </body>
 </html>

@@ -470,3 +470,104 @@ body {
   .nav-item { justify-content: center; padding: 12px; }
   .main-content { margin-left: 64px; }
 }
+
+/* ── 신청 페이지 팝업 모달 ── */
+.app-page-modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+}
+.app-page-modal-overlay.open { display: flex; }
+.app-page-modal-inner {
+  display: flex;
+  flex-direction: column;
+  width: min(860px, 95vw);
+  height: 90vh;
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.25);
+}
+.app-page-modal-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
+  flex-shrink: 0;
+}
+.app-page-modal-title { font-size: 14px; font-weight: 600; color: #374151; }
+
+/* ── WYSIWYG 에디터 ── */
+#wysiwygEditor { padding: 4px 0; }
+.wysiwyg-hint {
+  font-size: 11px; color: #6b7280; background: #f0fdf4;
+  border: 1px solid #bbf7d0; border-radius: 6px;
+  padding: 6px 12px; margin-bottom: 12px;
+}
+.wysiwyg-section {
+  border: 1px solid #e5e7eb; border-radius: 10px;
+  padding: 14px 16px; margin-bottom: 14px; background: #fafafa;
+}
+.wysiwyg-section-num {
+  font-size: 10px; font-weight: 700; color: #9ca3af;
+  text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;
+}
+.wysiwyg-editable {
+  cursor: pointer; border-radius: 5px; padding: 3px 6px;
+  transition: background 0.15s;
+}
+.wysiwyg-editable:hover { background: #e8f5e9; outline: 1.5px dashed #7a9e7e; }
+.wysiwyg-editable[data-type="section-title"] {
+  font-size: 15px; font-weight: 700; color: #1f2937; margin-bottom: 4px;
+}
+.wysiwyg-desc { font-size: 12px; color: #6b7280; margin-bottom: 10px; }
+.wysiwyg-field-block { margin-top: 10px; }
+.wysiwyg-field-label { font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 4px; }
+.wysiwyg-input-mock {
+  height: 32px; background: #f3f4f6; border: 1px solid #e5e7eb;
+  border-radius: 6px; margin-top: 2px;
+}
+.wysiwyg-timeslots { margin: 6px 0; }
+.wysiwyg-timeslot-row {
+  display: flex; align-items: center; gap: 4px;
+  padding: 3px 0;
+}
+.wysiwyg-timeslot-label { font-size: 13px; color: #374151; flex: 1; }
+.wysiwyg-del-btn {
+  border: none; background: none; cursor: pointer;
+  color: #9ca3af; font-size: 12px; padding: 2px 4px; border-radius: 4px;
+}
+.wysiwyg-del-btn:hover { color: #ef4444; background: #fef2f2; }
+.wysiwyg-add-btn {
+  margin-top: 6px; font-size: 12px; color: #7a9e7e;
+  background: none; border: 1px dashed #7a9e7e; border-radius: 6px;
+  padding: 4px 10px; cursor: pointer;
+}
+.wysiwyg-add-btn:hover { background: #f0fdf4; }
+.wysiwyg-agree-row { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+
+/* ── 미리보기 모달 ── */
+.preview-modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.5); z-index: 1000;
+  align-items: center; justify-content: center;
+}
+.preview-modal-overlay.open { display: flex; }
+.preview-modal-inner {
+  display: flex; flex-direction: column;
+  width: min(480px, 95vw); height: 90vh;
+  background: #fff; border-radius: 12px;
+  overflow: hidden; box-shadow: 0 8px 40px rgba(0,0,0,0.25);
+}
+.preview-modal-toolbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 16px; border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb; flex-shrink: 0;
+}
+.preview-modal-title { font-size: 14px; font-weight: 600; color: #374151; }

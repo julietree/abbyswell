@@ -379,6 +379,25 @@ const Admin = (() => {
     XLSX.writeFile(wb, `코칭등록현황_${new Date().toISOString().substring(0, 10)}.xlsx`);
   }
 
+  // ── 드래그로 첫차수 업데이트 (reg 객체 직접 수신) ────
+  function updateFirstSessionByReg(reg, value) {
+    if (!reg) return;
+    reg.first_session = value;
+    const key = reg.id || reg.created_at || reg.email || reg.name;
+    if (key) setFsCache(key, value);
+    Calendar.update(allData);
+    renderTable();
+    showSaveToast('✅ 첫차수 이동됨');
+    clearTimeout(_saveTimer);
+    _saveTimer = setTimeout(async () => {
+      if (!reg.id) return;
+      try { await API.updateFirstSession(reg.id, value); }
+      catch (err) { console.error('첫차수 GAS 저장 실패:', err.message); }
+    }, 800);
+  }
+
+  function setFsCachePublic(key, value) { setFsCache(key, value); }
+
   // ── 첫차수 캘린더 삭제 ───────────────────────────────
   function clearFirstSession(regId) {
     const reg = allData.find(r => r.id === regId);
@@ -466,7 +485,8 @@ const Admin = (() => {
   }
 
   return { init, loadData, filterTable, sortTable, openModal, closeModal,
-           exportExcel, downloadContract, deleteSelected, updateFirstSession, toggleSelectAll, clearFirstSession };
+           exportExcel, downloadContract, deleteSelected, updateFirstSession, toggleSelectAll,
+           clearFirstSession, updateFirstSessionByReg, setFsCachePublic };
 })();
 
 document.addEventListener('DOMContentLoaded', Admin.init);

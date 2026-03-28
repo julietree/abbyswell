@@ -43,6 +43,8 @@ const Survey = (() => {
       } catch (err) {
         console.warn('미리보기 설정 로드 실패:', err);
       }
+      // Fix 3b: 미리보기 모드에서 모든 섹션을 한 번에 스크롤로 보여줌
+      showAllSectionsForPreview();
     } else {
       await loadFormConfig();
     }
@@ -146,6 +148,18 @@ const Survey = (() => {
     }
     label.style.fontWeight = fieldConfig.bold   ? '700' : '';
     label.style.fontStyle  = fieldConfig.italic ? 'italic' : '';
+  }
+
+  // ── Fix 3b: 미리보기 모드 — 전체 섹션 펼치기 ─────────
+  function showAllSectionsForPreview() {
+    document.querySelectorAll('.section-card').forEach(card => {
+      card.style.display = 'block';
+    });
+    document.querySelectorAll('.nav-buttons').forEach(el => {
+      el.style.display = 'none';
+    });
+    const progress = document.querySelector('.progress-wrapper');
+    if (progress) progress.style.display = 'none';
   }
 
   // ── 이벤트 바인딩 ────────────────────────────────────

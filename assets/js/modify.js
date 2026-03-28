@@ -1,14 +1,9 @@
 /**
- * modify.js — 신청서 수정 에디터
+ * modify.js — 신청서 수정 에디터 (WYSIWYG 인라인 편집)
  *
- * 저장 방식: API.updateConfig('form_config', JSON.stringify(config))
- *   → GAS config 시트에 저장 → index.html(survey.js)이 로드 시 읽어서 DOM에 적용
- *
- * 편집 가능 항목:
- *   - 문항 라벨: 이름/이메일/연락처/세션횟수/시간대/동의 체크박스 텍스트 + Bold/Italic
- *   - 섹션 텍스트: 3개 섹션 각각의 제목과 설명 문구
- *   - 시간대 옵션: 선호 시간대 체크박스 항목 추가·수정·삭제
- *   - 배경: 그라디언트 색상 또는 이미지
+ * Fix 3a: 탭 기반 → WYSIWYG 라이브 폼 뷰 (클릭하여 바로 수정)
+ * Fix 3b: 미리보기 → 페이지 내 모달 iframe
+ * Fix 3c: 기본 문구 변경 (약관→계약 동의)
  */
 
 const Modify = (() => {
@@ -21,12 +16,12 @@ const Modify = (() => {
       contact:         { label: '연락처',                     bold: false, italic: false },
       session_count:   { label: '희망 세션 횟수',              bold: false, italic: false },
       preferred_times: { label: '선호하는 요일 및 시간대',     bold: false, italic: false },
-      agree_all:       { label: '위 내용을 읽고 동의합니다.', bold: false, italic: false },
+      agree_all:       { label: '계약에 동의합니다.',          bold: false, italic: false },
     },
     sections: {
       '1': { title: '기본 정보',            desc: '코칭 계약의 기본 사항과 연락처를 입력해 주세요.' },
       '2': { title: '세션 구성 & 비용 안내', desc: '한 세션당 시간은 약 50~60분 소요됩니다. 희망하시는 세션 횟수를 입력하고 비용 안내를 확인해주세요.' },
-      '3': { title: '약관 동의',            desc: '아래 내용을 읽고 하단에서 동의해 주세요.' },
+      '3': { title: '계약 동의',            desc: '아래 내용을 읽고 하단에서 동의해 주세요.' },
     },
     timeslots: [
       { value: '월~금: 오전 7~9시',  label: '월~금 · 오전 7~9시' },
@@ -58,164 +53,168 @@ const Modify = (() => {
     }
     updateBgPreview();
 
-    // 모든 탭 렌더
-    renderFieldsTab();
-    renderSectionsTab();
-    renderTimeslotsTab();
-  }
-
-  // ── 탭 전환 ────────────────────────────────────────────────────────
-  function switchTab(tab, btn) {
-    document.querySelectorAll('.editor-tab').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById(`tab-${tab}`).classList.add('active');
+    // WYSIWYG 렌더
+    renderWysiwyg();
   }
 
   // ══════════════════════════════════════════════════════════════════
-  // 탭 1: 문항 라벨 편집
+  // Fix 3a: WYSIWYG 에디터
   // ══════════════════════════════════════════════════════════════════
 
-  const FIELD_DEFS = [
-    { id: 'name',            hint: '고객 이름 입력칸 (섹션 1)',              type: 'text'     },
-    { id: 'email',           hint: '이메일 주소 입력칸 (섹션 1)',             type: 'email'    },
-    { id: 'contact',         hint: '연락처 입력칸 (섹션 1)',                 type: 'text'     },
-    { id: 'session_count',   hint: '세션 횟수 입력칸 라벨 (섹션 2)',         type: 'number'   },
-    { id: 'preferred_times', hint: '선호 시간대 체크박스 그룹 라벨 (섹션 2)', type: 'checkbox' },
-    { id: 'agree_all',       hint: '동의 체크박스 텍스트 (섹션 3)',           type: 'checkbox' },
-  ];
+  function renderWysiwyg() {
+    const container = document.getElementById('wysiwygEditor');
+    if (!container) return;
 
-  function renderFieldsTab() {
-    const container = document.getElementById('fieldEditorList');
-    container.innerHTML = FIELD_DEFS.map(f => {
-      const state = config.fields[f.id] || { label: '', bold: false, italic: false };
+    container.innerHTML = `
+      <div class="wysiwyg-hint">✏️ 텍스트를 클릭하면 바로 수정할 수 있습니다.</div>
+
+      ${renderWysiwygSection('1')}
+      ${renderWysiwygSection('2')}
+      ${renderWysiwygSection('3')}
+    `;
+
+    bindWysiwygEdit();
+  }
+
+  function renderWysiwygSection(num) {
+    const sec = config.sections[num] || { title: '', desc: '' };
+
+    if (num === '1') {
       return `
-        <div class="field-editor-row">
-          <div class="field-row-info">
-            <span class="field-id-badge">${esc(f.type)}</span>
-            <span class="field-name-hint">${esc(f.hint)}</span>
-          </div>
-          <div class="field-row-controls">
-            <input
-              class="field-label-input"
-              type="text"
-              value="${esc(state.label)}"
-              placeholder="라벨 텍스트 입력"
-              oninput="Modify.onFieldChange('${f.id}', 'label', this.value)"
-            >
-            <div class="style-btns">
-              <button class="style-btn ${state.bold   ? 'active' : ''}" title="굵게"   onclick="Modify.toggleFieldStyle('${f.id}', 'bold',   this)"><strong>B</strong></button>
-              <button class="style-btn ${state.italic ? 'active' : ''}" title="기울임" onclick="Modify.toggleFieldStyle('${f.id}', 'italic', this)"><em>I</em></button>
+        <div class="wysiwyg-section">
+          <div class="wysiwyg-section-num">섹션 ${num}</div>
+          <div class="wysiwyg-editable" data-type="section-title" data-num="${num}">${esc(sec.title)}</div>
+          <div class="wysiwyg-editable wysiwyg-desc" data-type="section-desc" data-num="${num}">${esc(sec.desc)}</div>
+          ${renderWysiwygField('name')}
+          ${renderWysiwygField('email')}
+          ${renderWysiwygField('contact')}
+        </div>`;
+
+    } else if (num === '2') {
+      return `
+        <div class="wysiwyg-section">
+          <div class="wysiwyg-section-num">섹션 ${num}</div>
+          <div class="wysiwyg-editable" data-type="section-title" data-num="${num}">${esc(sec.title)}</div>
+          <div class="wysiwyg-editable wysiwyg-desc" data-type="section-desc" data-num="${num}">${esc(sec.desc)}</div>
+          ${renderWysiwygField('session_count')}
+          <div class="wysiwyg-field-block">
+            <div class="wysiwyg-editable wysiwyg-field-label" data-type="field-label" data-field="preferred_times">${esc(config.fields['preferred_times'] && config.fields['preferred_times'].label || '')}</div>
+            <div class="wysiwyg-timeslots" id="wysiwygTimeslots">
+              ${renderTimeslotItems()}
             </div>
+            <button class="wysiwyg-add-btn" onclick="Modify.addTimeslot()">＋ 시간대 추가</button>
           </div>
-        </div>
-      `;
-    }).join('');
-  }
+        </div>`;
 
-  function onFieldChange(id, prop, value) {
-    if (!config.fields[id]) config.fields[id] = {};
-    config.fields[id][prop] = value;
-  }
-
-  function toggleFieldStyle(id, prop, btn) {
-    if (!config.fields[id]) config.fields[id] = {};
-    config.fields[id][prop] = !config.fields[id][prop];
-    btn.classList.toggle('active', config.fields[id][prop]);
-  }
-
-  // ══════════════════════════════════════════════════════════════════
-  // 탭 2: 섹션 제목/설명 편집
-  // ══════════════════════════════════════════════════════════════════
-
-  const SECTION_DEFS = [
-    { num: '1', label: '섹션 1 — 기본 정보' },
-    { num: '2', label: '섹션 2 — 세션 구성 & 비용' },
-    { num: '3', label: '섹션 3 — 약관 동의' },
-  ];
-
-  function renderSectionsTab() {
-    const container = document.getElementById('sectionEditorList');
-    container.innerHTML = SECTION_DEFS.map(s => {
-      const section = config.sections[s.num] || { title: '', desc: '' };
+    } else {
       return `
-        <div class="section-editor-block">
-          <div class="section-editor-label">${esc(s.label)}</div>
-          <div class="section-field-row">
-            <label class="section-field-caption">제목</label>
-            <input
-              class="field-label-input"
-              type="text"
-              value="${esc(section.title)}"
-              placeholder="섹션 제목"
-              oninput="Modify.onSectionChange('${s.num}', 'title', this.value)"
-            >
+        <div class="wysiwyg-section">
+          <div class="wysiwyg-section-num">섹션 ${num}</div>
+          <div class="wysiwyg-editable" data-type="section-title" data-num="${num}">${esc(sec.title)}</div>
+          <div class="wysiwyg-editable wysiwyg-desc" data-type="section-desc" data-num="${num}">${esc(sec.desc)}</div>
+          <div class="wysiwyg-agree-row">
+            <input type="checkbox" disabled>
+            <div class="wysiwyg-editable wysiwyg-field-label" data-type="field-label" data-field="agree_all">${esc(config.fields['agree_all'] && config.fields['agree_all'].label || '')}</div>
           </div>
-          <div class="section-field-row">
-            <label class="section-field-caption">설명</label>
-            <textarea
-              class="field-label-input section-desc-textarea"
-              placeholder="섹션 설명 문구"
-              oninput="Modify.onSectionChange('${s.num}', 'desc', this.value)"
-            >${esc(section.desc)}</textarea>
-          </div>
-        </div>
-      `;
-    }).join('');
-  }
-
-  function onSectionChange(num, prop, value) {
-    if (!config.sections[num]) config.sections[num] = {};
-    config.sections[num][prop] = value;
-  }
-
-  // ══════════════════════════════════════════════════════════════════
-  // 탭 3: 시간대 옵션 편집
-  // ══════════════════════════════════════════════════════════════════
-
-  function renderTimeslotsTab() {
-    const container = document.getElementById('timeslotEditorList');
-    if (config.timeslots.length === 0) {
-      container.innerHTML = `<p class="empty-timeslots-msg">시간대 항목이 없습니다. 아래 버튼으로 추가하세요.</p>`;
-      return;
+        </div>`;
     }
-    container.innerHTML = config.timeslots.map((slot, i) => `
-      <div class="timeslot-editor-row">
-        <div class="timeslot-row-num">${i + 1}</div>
-        <div class="timeslot-fields">
-          <input
-            class="field-label-input"
-            type="text"
-            value="${esc(slot.label)}"
-            placeholder="표시 라벨 (예: 월~금 · 오전 7~9시)"
-            oninput="Modify.onTimeslotChange(${i}, 'label', this.value)"
-          >
-          <input
-            class="field-label-input timeslot-value-input"
-            type="text"
-            value="${esc(slot.value)}"
-            placeholder="저장값 (예: 월~금: 오전 7~9시)"
-            oninput="Modify.onTimeslotChange(${i}, 'value', this.value)"
-          >
-        </div>
-        <button class="timeslot-delete-btn" onclick="Modify.removeTimeslot(${i})" title="삭제">✕</button>
+  }
+
+  function renderWysiwygField(fieldId) {
+    const f = config.fields[fieldId] || { label: '' };
+    return `
+      <div class="wysiwyg-field-block">
+        <div class="wysiwyg-editable wysiwyg-field-label" data-type="field-label" data-field="${fieldId}">${esc(f.label)}</div>
+        <div class="wysiwyg-input-mock"></div>
+      </div>`;
+  }
+
+  function renderTimeslotItems() {
+    return config.timeslots.map((slot, i) => `
+      <div class="wysiwyg-timeslot-row" data-idx="${i}">
+        <input type="checkbox" disabled style="margin-right:6px;">
+        <span class="wysiwyg-editable wysiwyg-timeslot-label" data-type="timeslot-label" data-idx="${i}">${esc(slot.label)}</span>
+        <button class="wysiwyg-del-btn" onclick="Modify.removeTimeslot(${i})" title="삭제">✕</button>
       </div>
     `).join('');
   }
 
-  function onTimeslotChange(index, prop, value) {
-    if (config.timeslots[index]) {
-      config.timeslots[index][prop] = value;
+  function bindWysiwygEdit() {
+    document.querySelectorAll('.wysiwyg-editable').forEach(el => {
+      el.addEventListener('click', () => openInlineEdit(el));
+    });
+  }
+
+  function openInlineEdit(el) {
+    if (el.querySelector('input, textarea')) return; // already editing
+
+    const type    = el.dataset.type;
+    const isMulti = type === 'section-desc';
+    const current = el.textContent.trim();
+
+    const inputEl = isMulti
+      ? document.createElement('textarea')
+      : document.createElement('input');
+
+    inputEl.value = current;
+    inputEl.style.cssText = 'width:100%;padding:4px 6px;border:1.5px solid #7a9e7e;border-radius:6px;font-size:inherit;font-family:inherit;background:#fff;box-sizing:border-box;';
+    if (isMulti) {
+      inputEl.rows = 3;
+      inputEl.style.resize = 'vertical';
+    }
+
+    el.textContent = '';
+    el.appendChild(inputEl);
+    inputEl.focus();
+
+    const commit = () => {
+      const val = inputEl.value.trim();
+      saveEditValue(type, el.dataset, val);
+      el.textContent = val || '(비어있음)';
+      // 타임슬롯은 전체 재렌더
+      if (type === 'timeslot-label') {
+        document.getElementById('wysiwygTimeslots').innerHTML = renderTimeslotItems();
+        bindWysiwygEdit();
+      }
+    };
+
+    inputEl.addEventListener('blur', commit);
+    inputEl.addEventListener('keydown', (e) => {
+      if (!isMulti && e.key === 'Enter') { e.preventDefault(); inputEl.blur(); }
+      if (e.key === 'Escape') { el.textContent = current; }
+    });
+  }
+
+  function saveEditValue(type, dataset, val) {
+    if (type === 'section-title') {
+      const num = dataset.num;
+      if (!config.sections[num]) config.sections[num] = {};
+      config.sections[num].title = val;
+    } else if (type === 'section-desc') {
+      const num = dataset.num;
+      if (!config.sections[num]) config.sections[num] = {};
+      config.sections[num].desc = val;
+    } else if (type === 'field-label') {
+      const field = dataset.field;
+      if (!config.fields[field]) config.fields[field] = {};
+      config.fields[field].label = val;
+    } else if (type === 'timeslot-label') {
+      const idx = parseInt(dataset.idx);
+      if (config.timeslots[idx]) config.timeslots[idx].label = val;
     }
   }
 
   function addTimeslot() {
-    config.timeslots.push({ value: '', label: '' });
-    renderTimeslotsTab();
-    // 새로 추가된 항목의 첫 입력칸에 포커스
-    const rows = document.querySelectorAll('.timeslot-editor-row');
-    const lastRow = rows[rows.length - 1];
-    if (lastRow) lastRow.querySelector('input')?.focus();
+    config.timeslots.push({ value: '', label: '새 시간대' });
+    const container = document.getElementById('wysiwygTimeslots');
+    if (container) {
+      container.innerHTML = renderTimeslotItems();
+      bindWysiwygEdit();
+      // 새로 추가된 항목 바로 편집
+      const rows = container.querySelectorAll('.wysiwyg-timeslot-row');
+      const lastLabel = rows[rows.length - 1].querySelector('.wysiwyg-editable');
+      if (lastLabel) openInlineEdit(lastLabel);
+    }
   }
 
   function removeTimeslot(index) {
@@ -224,7 +223,11 @@ const Modify = (() => {
       return;
     }
     config.timeslots.splice(index, 1);
-    renderTimeslotsTab();
+    const container = document.getElementById('wysiwygTimeslots');
+    if (container) {
+      container.innerHTML = renderTimeslotItems();
+      bindWysiwygEdit();
+    }
   }
 
   // ══════════════════════════════════════════════════════════════════
@@ -265,17 +268,29 @@ const Modify = (() => {
   }
 
   // ══════════════════════════════════════════════════════════════════
-  // 미리보기 & 저장
+  // Fix 3b: 인라인 미리보기 모달
   // ══════════════════════════════════════════════════════════════════
 
   function openPreview() {
     localStorage.setItem('preview_config', JSON.stringify(config));
-    window.open('index.html?preview=true', '_blank');
+    const modal  = document.getElementById('previewModal');
+    const iframe = document.getElementById('previewIframe');
+    iframe.src = `index.html?preview=true&t=${Date.now()}`;
+    modal.classList.add('open');
   }
+
+  function closePreview(e) {
+    if (e && e.target !== document.getElementById('previewModal')) return;
+    document.getElementById('previewModal').classList.remove('open');
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  // 저장
+  // ══════════════════════════════════════════════════════════════════
 
   async function save() {
     const btn = document.getElementById('saveBtn');
-    btn.disabled  = true;
+    btn.disabled    = true;
     btn.textContent = '저장 중...';
 
     try {
@@ -307,16 +322,13 @@ const Modify = (() => {
       .replace(/"/g, '&quot;');
   }
 
-  function deepClone(obj) {
-    return JSON.parse(JSON.stringify(obj));
-  }
+  function deepClone(obj) { return JSON.parse(JSON.stringify(obj)); }
 
-  /** 두 객체를 재귀적으로 병합 (배열은 source로 완전 교체) */
   function deepMerge(target, source) {
     const result = deepClone(target);
     for (const key of Object.keys(source)) {
       if (Array.isArray(source[key])) {
-        result[key] = source[key]; // 배열은 source 값으로 교체
+        result[key] = source[key];
       } else if (source[key] && typeof source[key] === 'object') {
         result[key] = deepMerge(result[key] || {}, source[key]);
       } else {
@@ -328,17 +340,13 @@ const Modify = (() => {
 
   return {
     init,
-    switchTab,
-    onFieldChange,
-    toggleFieldStyle,
-    onSectionChange,
-    onTimeslotChange,
     addTimeslot,
     removeTimeslot,
     switchBgTab,
     updateBgPreview,
     handleImageUpload,
     openPreview,
+    closePreview,
     save,
   };
 })();
