@@ -60,7 +60,7 @@ const API = (() => {
     const [headers, ...rows] = values;
     return rows.map(row =>
       headers.reduce((obj, header, i) => {
-        obj[header] = row[i] ?? '';
+        obj[header] = (row[i] !== null && row[i] !== undefined) ? row[i] : '';
         return obj;
       }, {})
     );

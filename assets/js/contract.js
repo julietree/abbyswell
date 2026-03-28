@@ -67,10 +67,10 @@ const Contract = (() => {
 
     // 4. 고객 정보 치환 (모두 템플릿에서 유일하게 1회 등장 확인됨)
     xml = xml
-      .replace('정 성 화',              spacedName)
-      .replace('010-2585-4449',          data.contact || '')
-      .replace('총 10회(1회 약 50~60분)', `총 ${count}회(1회 약 50~60분)`)
-      .replace('100,000원 (VAT 포함)',    `${cost}원 (VAT 포함)`);
+      .replace(/정 성 화/g,               spacedName)
+      .replace('010-2585-4449',           data.contact || '')
+      .replace('총 10회(1회 약 50~60분)',  `총 ${count}회(1회 약 50~60분)`)
+      .replace('<w:t>100,000원 (VAT</w:t>', `<w:t>${cost}원 (VAT</w:t>`);
 
     // 5. 서명란 날짜 치환
     //    XML 구조: " 2026년 " → "3" → "월  " → "22" → "일"  (각각 별도 <w:t> 런)

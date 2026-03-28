@@ -93,6 +93,7 @@ function generateContractHTML(data) {
   .sig-name { font-size: 12pt; font-weight: 700; margin-bottom: 6px; }
   .sig-line { border-bottom: 0.5px solid #aaa; padding-bottom: 18px; font-size: 8.5pt; color: #333; }
   .sig-date { font-size: 8pt; color: #777; margin-top: 5px; }
+  .sig-note-small { font-size: 7pt; color: #555; margin-top: 5px; line-height: 1.4; }
 </style>
 </head>
 <body>
@@ -199,6 +200,7 @@ function generateContractHTML(data) {
       <div class="sig-role">고객 (Client)</div>
       <div class="sig-name">${safeVal(data.name)}</div>
       <div class="sig-line">${safeVal(data.name)}</div>
+      <div class="sig-note-small">'Abby 코치 코칭 신청 설문'의 계약 동의 항목에 체크한 것을 서명으로 갈음합니다.</div>
       <div class="sig-date">날짜: ${safeVal(data.submitted_date_str)}</div>
     </div>
   </div>
