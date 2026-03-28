@@ -29,6 +29,15 @@ const Modify = (() => {
       { value: '토~일: 저녁 7~10시', label: '토~일 · 저녁 7~10시' },
     ],
     bg: { type: 'color', color1: '#e8f0e9', color2: '#f5efe6', image: null },
+    terms_articles: [
+      { title: '코칭이란', content: '코칭은 고객이 스스로 원하는 삶을 설계하고 목표를 실현할 수 있도록 돕는 파트너십입니다. 코치는 조언이나 해답을 제시하지 않으며, 모든 답은 고객 안에 있다고 믿습니다. 고객의 현재 상황과 원하는 미래에 집중하되, 과거의 상처나 정신건강 문제는 다루지 않습니다. 해당 영역은 전문 상담사의 도움이 필요합니다.' },
+      { title: '코칭 비용 및 결제', content: '코칭 1회 비용은 10,000원(VAT 포함)이며, 계약 후 1주일 이내에 전체 코칭 비용을 계좌이체로 납부합니다.' },
+      { title: '일정 변경 및 취소', content: '코칭 48시간 전까지 취소 시 전액 환불, 24시간 전까지 취소 시 50% 환불, 24시간 이내 취소 또는 무단 불참 시 환불이 불가합니다. 일정 변경은 48시간 전까지 요청 시 재조정 가능합니다. 코치 사정으로 코칭 취소 시 전액 환불 또는 고객 선택에 따라 일정을 재조정하며, 불가피한 사정(천재지변, 응급상황 등)은 별도 협의합니다.' },
+      { title: '비밀 유지', content: '코치는 고객의 동의 없이 제3자에게 코칭의 어떤 내용도 공유하지 않습니다. 단, 고객 본인 또는 타인에게 위해 가능성이 있다고 판단될 경우 법적 의무에 따라 예외적으로 공유할 수 있습니다.' },
+      { title: '고객과 코치의 역할', content: '고객은 변화의 주체가 자기 자신임을 기억하며, 신뢰를 바탕으로 솔직하게 나누고 코칭 사이의 실천을 통해 성장을 만들어갑니다. 코치는 고객의 가능성을 온전히 믿으며, 판단 없는 경청과 질문으로 함께합니다. 모든 과정은 ICF 윤리규정을 준수하며 이루어집니다.' },
+      { title: '계약 종료', content: '고객 또는 코치는 언제든지 2주 전 사전 통보로 계약을 종료할 수 있으며, 미진행 코칭 비용은 환불됩니다.' },
+      { title: '합의 및 서명', content: '위 내용을 충분히 이해하였으며 동의합니다. 궁금한 점이 있으면 서명 전에 언제든 코치에게 문의하셔도 됩니다.' },
+    ],
   };
 
   let config = deepClone(DEFAULT_CONFIG);
@@ -112,6 +121,9 @@ const Modify = (() => {
           <div class="wysiwyg-section-num">섹션 ${num}</div>
           <div class="wysiwyg-editable" data-type="section-title" data-num="${num}">${esc(sec.title)}</div>
           <div class="wysiwyg-editable wysiwyg-desc" data-type="section-desc" data-num="${num}">${esc(sec.desc)}</div>
+          <div class="wysiwyg-terms-articles" id="wysiwygTermsArticles">
+            ${renderTermsArticles()}
+          </div>
           <div class="wysiwyg-agree-row">
             <input type="checkbox" disabled>
             <div class="wysiwyg-editable wysiwyg-field-label" data-type="field-label" data-field="agree_all">${esc(config.fields['agree_all'] && config.fields['agree_all'].label || '')}</div>
@@ -127,6 +139,15 @@ const Modify = (() => {
         <div class="wysiwyg-editable wysiwyg-field-label" data-type="field-label" data-field="${fieldId}">${esc(f.label)}</div>
         <div class="wysiwyg-input-mock"></div>
       </div>`;
+  }
+
+  function renderTermsArticles() {
+    return (config.terms_articles || []).map((art, i) => `
+      <div class="wysiwyg-terms-article">
+        <div class="wysiwyg-editable wysiwyg-terms-title" data-type="terms-title" data-idx="${i}">${esc(art.title)}</div>
+        <div class="wysiwyg-editable wysiwyg-terms-content" data-type="terms-content" data-idx="${i}">${esc(art.content)}</div>
+      </div>
+    `).join('');
   }
 
   function renderTimeslotItems() {
@@ -149,7 +170,7 @@ const Modify = (() => {
     if (el.querySelector('input, textarea')) return; // already editing
 
     const type    = el.dataset.type;
-    const isMulti = type === 'section-desc';
+    const isMulti = type === 'section-desc' || type === 'terms-content';
     const current = el.textContent.trim();
 
     const inputEl = isMulti
@@ -201,6 +222,12 @@ const Modify = (() => {
     } else if (type === 'timeslot-label') {
       const idx = parseInt(dataset.idx);
       if (config.timeslots[idx]) config.timeslots[idx].label = val;
+    } else if (type === 'terms-title') {
+      const idx = parseInt(dataset.idx);
+      if (config.terms_articles && config.terms_articles[idx]) config.terms_articles[idx].title = val;
+    } else if (type === 'terms-content') {
+      const idx = parseInt(dataset.idx);
+      if (config.terms_articles && config.terms_articles[idx]) config.terms_articles[idx].content = val;
     }
   }
 

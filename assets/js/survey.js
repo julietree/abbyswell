@@ -122,7 +122,23 @@ const Survey = (() => {
       }
     }
 
-    // 4. 배경 색상 / 이미지
+    // 4. 약관 본문 (terms_articles)
+    if (config.terms_articles && config.terms_articles.length > 0) {
+      config.terms_articles.forEach((art, i) => {
+        const el = document.querySelector(`.terms-article[data-terms-idx="${i}"]`);
+        if (!el) return;
+        if (art.title) {
+          const h4 = el.querySelector('.terms-article-title');
+          if (h4) h4.textContent = art.title;
+        }
+        if (art.content) {
+          const p = el.querySelector('p:not(.terms-note)');
+          if (p) p.textContent = art.content;
+        }
+      });
+    }
+
+    // 5. 배경 색상 / 이미지
     if (config.bg) {
       if (config.bg.type === 'color' && config.bg.color1) {
         document.body.style.background =

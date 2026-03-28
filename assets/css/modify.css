@@ -571,3 +571,20 @@ body {
   background: #f9fafb; flex-shrink: 0;
 }
 .preview-modal-title { font-size: 14px; font-weight: 600; color: #374151; }
+
+/* ── 약관 본문 편집 ── */
+.wysiwyg-terms-articles {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin: 8px 0 10px;
+  background: #fff;
+}
+.wysiwyg-terms-article { margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #f3f4f6; }
+.wysiwyg-terms-article:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+.wysiwyg-terms-title {
+  font-size: 12px; font-weight: 700; color: #374151; margin-bottom: 3px;
+}
+.wysiwyg-terms-content {
+  font-size: 11px; color: #6b7280; line-height: 1.5;
+}
